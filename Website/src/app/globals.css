@@ -1,0 +1,155 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/InstrumentSerif-Regular.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/InstrumentSerif-Italic.ttf') format('truetype');
+}
+
+@theme {
+  --font-instrument: 'Instrument Serif', serif;
+  --color-background: #000000;
+  --color-foreground: #ededed;
+  --color-muted: #18181b;
+  --color-muted-foreground: #a1a1aa;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-primary: #3b82f6;
+  --color-primary-foreground: #ffffff;
+  --color-card: #09090b;
+  --color-card-foreground: #ededed;
+}
+
+@layer base {
+  :root {
+    --background: #000000;
+    --foreground: #ededed;
+    --font-orbitron: var(--font-orbitron);
+    --font-inter: var(--font-inter);
+    --font-manrope: var(--font-manrope);
+    --font-mono: var(--font-mono);
+    --stripe-color: #ffffff;
+  }
+
+  body {
+    background-color: #000000;
+    color: var(--foreground);
+    font-family: var(--font-inter), system-ui, sans-serif;
+  }
+}
+
+@keyframes aurora-bg {
+  0% {
+    background-position: 50% 50%, 50% 50%;
+  }
+  100% {
+    background-position: 350% 50%, 350% 50%;
+  }
+}
+
+.animate-aurora-bg {
+  animation: aurora-bg 60s linear infinite;
+}
+
+.font-manrope {
+  font-family: var(--font-manrope), "Manrope", sans-serif;
+  font-optical-sizing: auto;
+}
+
+.font-orbitron {
+  font-family: var(--font-orbitron), system-ui, sans-serif;
+}
+
+.font-mono {
+  font-family: var(--font-mono), monospace;
+}
+
+.instrument-serif-regular-italic {
+  font-family: "Instrument Serif", serif !important;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.font-instrument {
+  font-family: "Instrument Serif", serif !important;
+}
+
+/* Glassmorphism helpers */
+.glass-panel {
+  background: rgba(18, 20, 29, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.liquid-metal-border-mask {
+  padding: 2.5px;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+
+.glass-liquid-bar {
+  background: rgba(255, 255, 255, 0.04);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+  box-shadow: 
+    0 20px 40px -15px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 1.5px 0 rgba(255, 255, 255, 0.06);
+}
+
+.glass-panel-subtle {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.glass-card-hover {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card-hover:hover {
+  transform: translateY(-2px);
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 12px 30px -10px rgba(99, 102, 241, 0.15);
+}
+
+/* Border beam animation */
+@keyframes border-beam {
+  100% {
+    offset-distance: 100%;
+  }
+}
+
+.animate-border-beam {
+  animation: border-beam 6s linear infinite;
+}
+
+/* Gradient glow effects */
+.radial-aura {
+  background: radial-gradient(
+    circle at 50% 30%,
+    rgba(99, 102, 241, 0.15) 0%,
+    rgba(59, 130, 246, 0.08) 35%,
+    transparent 70%
+  );
+}
+
+.grid-bg {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}

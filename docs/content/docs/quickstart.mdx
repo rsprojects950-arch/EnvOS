@@ -1,0 +1,48 @@
+---
+title: Quickstart Guide
+description: Getting started with developing and running EnvOS
+---
+
+# Quickstart Guide
+
+This guide walks you through setting up and running the EnvOS ecosystem locally.
+
+---
+
+## Prerequisites
+
+- **Node.js**: v20 or v22+
+- **Git**
+- Modern Web Browser (Chrome, Brave, Edge, Firefox, or Safari)
+
+---
+
+## 1. Clone the Repository
+
+```bash
+git clone https://github.com/rsprojects950-arch/EnvOS.git
+cd EnvOS
+```
+
+---
+
+## 2. Running Documentation
+
+EnvOS uses **Fumadocs** for documentation:
+
+```bash
+cd docs
+npm install
+npm run dev
+```
+
+Visit [http://localhost:3000](http://localhost:3000) to view the documentation portal.
+
+---
+
+## 3. Git Workflow Checklist
+
+Before committing or pushing any code, review the rules in [Git Workflow & Guidelines](/docs/git-guidelines):
+- Never push directly to `main`.
+- Always create a branch with a ClickUp Task ID (`feat/CU-[task_id]-[description]`).
+- Do not commit sensitive environment variables or credentials.

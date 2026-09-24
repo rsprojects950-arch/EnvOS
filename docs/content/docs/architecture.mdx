@@ -1,0 +1,229 @@
+---
+title: System Architecture & Technical Specifications
+description: Tri-Tier Decoupled Architecture, UML specifications, protocols, security boundaries, and lifecycle sequences
+---
+
+# Architecture & Specifications
+
+EnvOS uses a **Tri-Tier Decoupled Architecture**. It cleanly splits concerns between presentation, metadata orchestration, and computational execution across three distinct physical entities.
+
+---
+
+## 1. High-Level Distributed Architecture
+
+<Mermaid
+  chart={`graph TB
+    subgraph TIER1["TIER 1: PRESENTATION (Thin Client)"]
+        H["💻 Client Machine 1 (Host Browser)<br/>• React 18 SPA + Vite<br/>• Apple Liquid Glass / Tailwind<br/>• react-rnd Window Manager<br/>• Monaco Code Studio (Tabs)<br/>• xterm.js Web Terminal Canvas"]
+        G["💻 Client Machine 2 (Guest Browser)<br/>• React 18 SPA + Vite<br/>• Apple Liquid Glass / Tailwind<br/>• react-rnd Window Manager<br/>• Monaco Code Studio (ReadOnly)<br/>• xterm.js (Output Stream Only)"]
+    end
+
+    subgraph TIER2["TIER 2: CONTROL PLANE (Managed Cloud)"]
+        S["☁️ Supabase Cloud<br/>• GoTrue Auth Service (JWT / Sessions)<br/>• PostgreSQL Relational Tables<br/>• Row-Level Security (RLS) Engine"]
+    end
+
+    subgraph TIER3["TIER 3: COMPUTE PLANE (Dedicated Runner Node)"]
+        subgraph Daemon["Node.js Daemon (Express + Socket.io Server)"]
+            RBAC["🛡️ RBAC Interceptor<br/>(Validates socket roles per packet)"]
+            Ring["🔄 Circular Scrollback Ring<br/>(64 KB in-memory buffer / room)"]
+            Reaper["⏱️ Grace Reaper<br/>(15-min countdown on 0 clients)"]
+            PTY["🐚 Shell Supervisor: node-pty Engine<br/>• Forks Linux /dev/pts processes (/bin/bash)<br/>• Binds stdin & pipes stdout/stderr ANSI"]
+            FS_SUP["📁 File Supervisor: chokidar + Node fs<br/>• Watches active disk workspace<br/>• Path traversal containment barrier"]
+
+            RBAC --> PTY
+            Ring --> PTY
+            Reaper --> PTY
+            PTY --> FS_SUP
+        end
+
+        subgraph Storage["Local Physical Storage (Laptop 2)"]
+            DISK["💾 /home/user/envos/server/workspaces/<br/>├── ws_ENV789/ (main.js, package.json, node_modules/, .git/)<br/>└── ws_A1B2C3/"]
+        end
+
+        FS_SUP --> DISK
+    end
+
+    H -- "1. REST / Auth Handshake" --> S
+    G -- "1. REST / Auth Handshake" --> S
+    H == "2. Real-Time WSS / Keystrokes / ANSI Deltas" ==> RBAC
+    G == "2. Real-Time WSS / Output Streams" ==> RBAC
+`}
+  caption="Figure 1: EnvOS Tri-Tier Decoupled Architecture Diagram"
+/>
+
+---
+
+## 2. Structural Layer Breakdown
+
+### Layer 1: Client Presentation Tier (Thin Client)
+* **Execution Boundary**: Client web browser (Chrome, Edge, Safari, Firefox).
+* **Window Management**: Manages window state, viewport coordinates, minimize/maximize animations, and dynamic z-index stacking via `react-rnd`.
+* **Code Canvas**: Renders code models with syntax engines, tabs, and line numbers using `@monaco-editor/react`. Automatically toggles `readOnly: true` when the client's role is `Viewer`.
+* **Terminal Canvas**: Parses ANSI escape sequences and renders a hardware-accelerated text grid via `@xterm/xterm`. Resizes dynamically using `@xterm/addon-fit`.
+* **Key Event Interception**: Intercepts browser shortcuts (e.g., `Ctrl + C`, `Ctrl + W`) and converts them into raw terminal escape sequences (`\x03`, `\x17`) to prevent accidental browser tab closures or navigation traps.
+* **Storage Footprint**: **0 MB** on the client device. All data is retrieved on-demand and retained in component memory.
+
+### Layer 2: Cloud Control Plane (Supabase)
+* **Execution Boundary**: Supabase Managed Cloud Infrastructure.
+* **Identity Verification**: Validates user credentials, issues signed JWTs, and manages user state through GoTrue.
+* **Relational Metastore**: Stores persistent records for `profiles`, `workspaces`, and `workspace_members`.
+* **Authorization Guard**: Enforces database-level Row-Level Security (RLS) policies to prevent unauthorized queries from manipulating workspace properties or member roles.
+* **Data Flow Constraint**: Strictly limited to low-frequency operations (sign-in, workspace registration, metadata reads). **Never processes streaming terminal I/O.**
+
+### Layer 3: Compute Plane Runner Node (Laptop 2)
+* **Execution Boundary**: Native Linux daemon or WSL2 (Ubuntu) process running on dedicated host hardware.
+* **Shell Isolation via `node-pty`**: Spawns native pseudo-terminal devices (`/dev/pts`) running `/bin/bash` with their Current Working Directory (`cwd`) locked to the allocated workspace directory.
+* **File System Operations**: Directly executes disk reads, writes, and tree generations via Node's native `fs` module. Watches file modifications using `chokidar` and broadcasts `files:changed` alerts.
+* **In-Memory Session Store**: Maintains a volatile mapping of active workspaces:
+
+```typescript
+interface ActiveSession {
+  roomCode: string;
+  cwd: string;
+  ptyProcess: IPty;
+  scrollback: string; // Rolling 64 KB ANSI buffer
+  members: Map<string, { userId: string; role: 'Host' | 'Editor' | 'Viewer' }>;
+  teardownTimer: NodeJS.Timeout | null;
+}
+```
+
+* **Packet Filtering**: Intercepts incoming WebSocket messages, checks the client's role, and drops unauthorized input before it reaches the bash process.
+
+---
+
+## 3. Communication Networks & Protocol Specifications
+
+EnvOS uses two distinct communication patterns depending on data frequency:
+
+| Channel | Protocol | Handshake / Target | Payload Type |
+| :--- | :--- | :--- | :--- |
+| **Auth & Metadata** | HTTPS REST | Supabase Cloud API | JSON Web Tokens, Schemas |
+| **Filesystem CRUD** | HTTP REST | Laptop 2 (Express Server) | File buffers, Tree JSON |
+| **Terminal Input** | WebSocket (WSS) | Laptop 2 (Socket.io) | Keystrokes, Break Bytes |
+| **Terminal Output** | WebSocket (WSS) | Laptop 2 (Socket.io) | ANSI Stream Strings |
+| **File Watcher** | WebSocket (WSS) | Laptop 2 (Socket.io) | Tree Invalidation Signals |
+
+### Network Traversal Strategies
+
+* **Option A: Cloudflare Zero-Trust Tunnel (Public / Campus Network)**  
+  Laptop 2 initiates an outbound HTTPS connection to Cloudflare edge nodes via `cloudflared`. Edge nodes assign a public domain (`https://runner.trycloudflare.com`). Clients connect to this domain, bypassing client-isolation firewalls on university Wi-Fi, eliminating NAT routing, and delivering built-in SSL/TLS termination.
+* **Option B: Local Area Network (Offline / Private Hotspot)**  
+  Laptop 2 binds the Express daemon to `0.0.0.0:5000`. Clients on the same network connect directly to Laptop 2's local IPv4 address (`http://192.168.1.45:5000`). Latency remains sub-5ms with zero external internet dependencies.
+
+---
+
+## 4. End-to-End System Lifecycles & Sequence Flows
+
+### 4.1 Session Creation & Member Joining Lifecycle
+
+<Mermaid
+  chart={`sequenceDiagram
+    autonumber
+    actor Host as Host Browser
+    participant Cloud as Supabase Cloud
+    participant Runner as Runner Node (Laptop 2)
+    actor Guest as Guest Browser
+
+    Host->>Cloud: 1. POST /workspaces (Generate "ENV789")
+    Cloud-->>Host: 2. Return Success
+    Host->>Runner: 3. POST /api/init { roomCode: "ENV789" }
+    Runner->>Runner: 4. fs.mkdirSync() (Allocates disk)
+    Runner->>Runner: 5. pty.spawn() (Forks bash shell)
+    Runner-->>Host: 6. Init Success
+    Host->>Runner: 7. WSS "join:room" (Host)
+    Guest->>Runner: 8. WSS "join:room" (Guest joins)
+    Runner->>Runner: 9. Assign Role 'Viewer'
+    par Broadcast Updated Member Roster
+        Runner-->>Host: 10. Broadcast Roster
+        Runner-->>Guest: 10. Broadcast Roster
+    end
+`}
+  caption="Figure 2: Session Creation and Member Join Sequence Flow"
+/>
+
+---
+
+### 4.2 Terminal Keystroke Pipeline & RBAC Enforcement
+
+<Mermaid
+  chart={`sequenceDiagram
+    autonumber
+    actor Guest as Guest Browser (Viewer)
+    participant Runner as Runner Node (Laptop 2)
+    actor Host as Host Browser (Host)
+
+    Guest->>Runner: 1. Types 'rm -rf *' (Emits "terminal:input")
+    Runner->>Runner: 2. Inspect session.members (Role === 'Viewer')
+    Runner->>Runner: 3. SILENTLY DROP PACKET (Process unaffected)
+
+    Host->>Runner: 4. Types 'ls -la' (Emits "terminal:input")
+    Runner->>Runner: 5. Inspect session.members (Role === 'Host' -> PASS)
+    Runner->>Runner: 6. ptyProcess.write('ls -la\\r')
+    Runner->>Runner: 7. Capture stdout ANSI sequence
+    Runner->>Runner: 8. Append to 64KB Scrollback Buffer
+    par Broadcast Real-Time ANSI Stream
+        Runner-->>Guest: 9. Stream "terminal:output" (xterm.js renders)
+        Runner-->>Host: 9. Stream "terminal:output" (xterm.js renders)
+    end
+`}
+  caption="Figure 3: Keystroke Filtering and RBAC Enforcement Sequence Flow"
+/>
+
+---
+
+### 4.3 State Preservation & Reconnection Sequence
+
+<Mermaid
+  chart={`sequenceDiagram
+    autonumber
+    actor HostA as Host Machine A
+    participant Runner as Runner Node (Laptop 2)
+    actor HostB as Host Machine B
+
+    HostA->>Runner: 1. Disconnects (Closes Tab)
+    Runner->>Runner: 2. Host socket drops
+    Runner->>Runner: 3. Start 15-Minute Reaper Timer (PTY shell & disk stay alive)
+
+    HostB->>Runner: 4. Log in & Join "ENV789"
+    Runner->>Runner: 5. Match host_id === userId
+    Runner->>Runner: 6. CANCEL 15-Minute Reaper Timer
+    Runner-->>HostB: 7. Emit "terminal:init" (Payload = 64KB Scrollback)
+    Note over HostB: 8. xterm.reset() & xterm.write(history)
+    Runner-->>HostB: 9. Send Directory Tree
+    Note over HostB: State fully restored
+`}
+  caption="Figure 4: 15-Minute Grace Period and Device Handoff Sequence Flow"
+/>
+
+---
+
+## 5. Security & Boundary Defenses
+
+### Path Traversal Protection (Jail Barrier)
+Every disk request (read, write, delete) is checked to prevent traversal attacks (`../../`):
+
+```javascript
+const safePath = path.resolve(session.cwd, path.normalize(requestedPath));
+if (!safePath.startsWith(path.resolve(session.cwd))) {
+  return res.status(403).json({ error: 'Access denied: Directory traversal blocked.' });
+}
+```
+
+### Role Verification at the Socket Level
+Security rules are not enforced solely through UI constraints. If a client alters client-side code to bypass a `readOnly` flag, the server checks the client's role stored in memory and discards unauthorized operations immediately.
+
+### Execution Sandboxing Scope (MVP)
+In this MVP, `node-pty` processes run under an unprivileged Linux service account in WSL2. The process has no passwordless `sudo` privileges, restricting operations to the user space and preventing changes to the underlying host OS.
+
+---
+
+## 6. Failure Modes & Edge-Case Mitigations
+
+| Boundary Condition | Root Failure Cause | Architectural Mitigation |
+| :--- | :--- | :--- |
+| **Windows Toolchain Breakage** | Missing C++ compilers for `node-pty` bindings | Execute `server/` exclusively within WSL2 (Ubuntu) on Laptop 2. |
+| **Campus Wi-Fi Isolation** | Enterprise routers block peer-to-peer LAN sockets | Route traffic through an outbound Cloudflare Tunnel (`cloudflared`). |
+| **ANSI Text Overlap** | Client canvas dimensions differ from virtual PTY | Run `fitAddon.fit()` and emit `terminal:resize` events on window change. |
+| **Terminal Desync on Reconnect** | New WebSocket connections miss previous output | Buffer output in a 64 KB circular scrollback cache on the server. |
+| **File Tree Desync** | Shell operations run independently of React state | Watch workspace folder using `chokidar` and emit `files:changed`. |
+| **Main-Thread Canvas Freezing** | Infinite loops output millions of bytes per second | Buffer and throttle terminal output to 16ms intervals (~60 FPS). |

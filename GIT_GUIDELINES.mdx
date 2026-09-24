@@ -1,0 +1,65 @@
+---
+title: 1. Git Guidelines
+description: Rules for Git workflow, branching, and pull requests
+---
+
+# Git Workflow & Branching Guidelines
+
+To maintain a clean repository history, comply with deployment standards, and track tasks effectively, all developers must adhere to the following Git rules.
+
+---
+
+## 🚫 1. Never Push Directly to `main`
+*   Direct pushes to the `main` (or `master`) branch are strictly prohibited.
+*   The `main` branch represents the stable production release. Any changes introduced here must go through the Pull Request (PR) review process.
+
+---
+
+## 🌿 2. Branch Naming & ClickUp Tracking
+Every feature, bugfix, refactor, or configuration change must be developed on a separate branch. 
+
+*   **Rule:** Every branch name **must incorporate a unique ClickUp Task ID**.
+*   **Format:** `type/CU-[task_id]-[brief-hyphenated-description]`
+
+### Branch Types:
+*   `feat/` : New features or functional additions.
+*   `fix/` : Bug fixes and error resolutions.
+*   `refactor/` : Code restructurings that do not change functionality.
+*   `docs/` : Documentation updates only.
+
+### Examples:
+*   `feat/CU-868abc-secure-invitations`
+*   `fix/CU-745xyz-auth-redirect-loop`
+*   `docs/CU-912def-update-readme`
+
+---
+
+## 🔄 3. Pull Request & Merge Workflow
+1.  **Pull Latest changes:** Before starting work, pull the latest changes from `main`.
+2.  **Create your Branch:** Create your ClickUp-linked branch locally:
+    ```bash
+    git checkout -b feat/CU-868abc-secure-invitations
+    ```
+3.  **Commit with Context:** Commits should be descriptive. Prefix them with your task ID when applicable:
+    ```bash
+    git commit -m "[CU-868abc] Add invitations table and postgres signup trigger"
+    ```
+4.  **Create a Pull Request (PR):** Push your branch to the remote repository and open a PR into `main`.
+5.  **Review & Merge:** Once code checks, builds, and peer reviews pass, merge the branch into `main`.
+
+---
+
+## 🔒 4. Secrets Prevention
+*   Always verify that you are **not pushing sensitive configuration keys** (like Supabase Service Role keys, API secrets, or passwords).
+*   Ensure that all `.env` files are ignored globally. Refer to the root [.gitignore](file:///.gitignore) to check excluded paths.
+
+---
+
+## 🤖 5. AI Commit Generation Prompt
+
+When using an AI assistant (like Cursor or Antigravity) to generate your commits or task descriptions, copy and paste the exact prompt below. *(Make sure the `@` mention correctly links to this file in your IDE!)*
+
+```text
+okay so we need to git push adhering to @GIT_GUIDELINES.mdx
+generate a one liner and a detailed description which i will use to create the click UP ID
+```
