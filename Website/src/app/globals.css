@@ -16,6 +16,103 @@
   src: url('/fonts/InstrumentSerif-Italic.ttf') format('truetype');
 }
 
+/* Apple San Francisco Fonts (macOS System Font) */
+@font-face {
+  font-family: 'SF Pro Text';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/SF-Pro-Text-Regular.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'SF Pro Text';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/SF-Pro-Text-Medium.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'SF Pro Text';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/SF-Pro-Text-Semibold.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'SF Pro Text';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/SF-Pro-Text-Bold.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'SF Pro Display';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/SF-Pro-Display-Regular.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'SF Pro Display';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/SF-Pro-Display-Medium.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'SF Pro Display';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/SF-Pro-Display-Semibold.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'SF Pro Display';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/SF-Pro-Display-Bold.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'SF Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/SF-Mono-Regular.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'SF Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/SF-Mono-Medium.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'SF Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/SF-Mono-Semibold.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'SF Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/SF-Mono-Bold.otf') format('opentype');
+}
+
 @theme {
   --font-instrument: 'Instrument Serif', serif;
   --color-background: #000000;
@@ -58,6 +155,9 @@
 
 .animate-aurora-bg {
   animation: aurora-bg 60s linear infinite;
+  will-change: background-position, transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .font-manrope {
@@ -83,6 +183,24 @@
   font-family: "Instrument Serif", serif !important;
 }
 
+.font-sf-pro {
+  font-family: var(--font-manrope), "Manrope", -apple-system, BlinkMacSystemFont, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-sf-display {
+  font-family: var(--font-manrope), "Manrope", -apple-system, BlinkMacSystemFont, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-sf-mono {
+  font-family: var(--font-manrope), "Manrope", monospace !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 /* Glassmorphism helpers */
 .glass-panel {
   background: rgba(18, 20, 29, 0.65);
@@ -97,16 +215,87 @@
   -webkit-mask-composite: xor;
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: exclude;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .glass-liquid-bar {
   background: rgba(255, 255, 255, 0.04);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  backdrop-filter: blur(12px) saturate(140%);
   box-shadow: 
     0 20px 40px -15px rgba(0, 0, 0, 0.4),
     inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.3),
     inset 0 -1px 1.5px 0 rgba(255, 255, 255, 0.06);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Liquid Glass Border - Glowing, refractive, fluid glass rim */
+@property --liquid-glass-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes liquid-glass-sweep {
+  0% {
+    --liquid-glass-angle: 0deg;
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    --liquid-glass-angle: 360deg;
+    background-position: 0% 50%;
+  }
+}
+
+.liquid-glass-border-mask {
+  padding: 2.5px;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.liquid-glass-border-gradient {
+  background: 
+    conic-gradient(
+      from var(--liquid-glass-angle, 0deg) at 50% 50%,
+      rgba(255, 255, 255, 0.85) 0deg,
+      rgba(255, 255, 255, 0.2) 45deg,
+      rgba(147, 197, 253, 0.75) 90deg,
+      rgba(255, 255, 255, 0.25) 135deg,
+      rgba(255, 255, 255, 0.9) 180deg,
+      rgba(216, 180, 254, 0.65) 230deg,
+      rgba(255, 255, 255, 0.2) 280deg,
+      rgba(147, 197, 253, 0.7) 325deg,
+      rgba(255, 255, 255, 0.85) 360deg
+    );
+  animation: liquid-glass-sweep 8s linear infinite;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.liquid-glass-tile {
+  background: rgba(255, 255, 255, 0.035);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+  box-shadow: 
+    0 25px 60px -15px rgba(0, 0, 0, 0.7),
+    0 0 35px -8px rgba(147, 197, 253, 0.18),
+    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1.5px 2px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Eliminate expensive hover recalculation and hit-testing during active scroll */
+html.lenis-scrolling,
+html.lenis-scrolling * {
+  pointer-events: none !important;
 }
 
 .glass-panel-subtle {
@@ -152,4 +341,41 @@
   background-image: 
     linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+/* Universal Scrollbar Removal - Clean UI with native smooth scrolling */
+* {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+html,
+body {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+/* Dashboard Theme Transition - Ultra-smooth 700ms dark <-> light mode transition */
+.dashboard-theme-container {
+  transition: color 700ms cubic-bezier(0.16, 1, 0.3, 1), background-color 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dashboard-theme-container,
+.dashboard-theme-container .theme-transition {
+  transition: color 700ms cubic-bezier(0.16, 1, 0.3, 1), background-color 700ms cubic-bezier(0.16, 1, 0.3, 1), border-color 700ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 700ms cubic-bezier(0.16, 1, 0.3, 1);
 }

@@ -14,17 +14,16 @@ interface PanelProps extends React.ComponentProps<"section"> {
 }
 
 function Panel({ className, children, ...props }: PanelProps) {
-  const grainId = React.useId().replace(/:/g, "");
-
   return (
     <section
       {...props}
       className={cn(
-        "relative isolate overflow-hidden rounded-[24px] p-6 sm:p-8 text-left",
-        "glass-liquid-bar backdrop-blur-xl backdrop-saturate-150",
+        "relative isolate overflow-hidden rounded-[24px] p-6 sm:p-8 text-left transform-gpu",
+        "glass-liquid-bar",
         "shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)]",
         className
       )}
+      style={{ transform: "translateZ(0)", ...props.style }}
     >
       {/* Liquid Metal Border Layer */}
       <div className="absolute inset-0 z-10 rounded-[24px] overflow-hidden pointer-events-none liquid-metal-border-mask">
@@ -42,26 +41,11 @@ function Panel({ className, children, ...props }: PanelProps) {
       {/* Subtle radial lighting */}
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.06),transparent_60%)]" />
 
-      {/* Micro-grain texture overlay */}
-      <svg
+      {/* Lightweight micro-texture overlay */}
+      <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 z-10 size-full opacity-[0.05] mix-blend-soft-light"
-      >
-        <filter id={grainId} x="0" y="0" width="100%" height="100%">
-          <feTurbulence
-            type="fractalNoise"
-            baseFrequency="0.72"
-            numOctaves="4"
-            seed="11"
-            stitchTiles="stitch"
-          />
-          <feColorMatrix type="saturate" values="0" />
-          <feComponentTransfer>
-            <feFuncA type="table" tableValues="0 0.55" />
-          </feComponentTransfer>
-        </filter>
-        <rect width="100%" height="100%" filter={`url(#${grainId})`} />
-      </svg>
+        className="pointer-events-none absolute inset-0 z-10 opacity-[0.04] bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"
+      />
 
       {/* Content */}
       <div className="relative z-20 flex flex-col h-full pointer-events-auto">

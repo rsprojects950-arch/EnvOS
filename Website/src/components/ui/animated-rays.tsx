@@ -45,10 +45,13 @@ export function AnimatedRays({
     )`;
 
   return (
-    <section className={cn("relative w-full h-full overflow-hidden", className)}>
+    <section
+      className={cn("relative w-full h-full overflow-hidden pointer-events-none transform-gpu", className)}
+      style={{ transform: "translateZ(0)", contain: "strict" }}
+    >
       {/* Aurora Background */}
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 transform-gpu"
         style={{
           backgroundImage: `${stripes}, ${rainbow}`,
           backgroundSize: "300%, 200%",
@@ -58,16 +61,19 @@ export function AnimatedRays({
             "radial-gradient(ellipse at 100% 0%, black 40%, transparent 70%)",
           WebkitMaskImage:
             "radial-gradient(ellipse at 100% 0%, black 40%, transparent 70%)",
+          transform: "translateZ(0)",
+          backfaceVisibility: "hidden",
         }}
       >
         {/* Animated overlay with difference blending for sharp Moiré ray beams */}
         <div
-          className="absolute inset-0 animate-aurora-bg"
+          className="absolute inset-0 animate-aurora-bg transform-gpu"
           style={{
             backgroundImage: `${stripes}, ${rainbow}`,
             backgroundSize: "200%, 100%",
-            backgroundAttachment: "fixed",
             mixBlendMode: "difference",
+            transform: "translateZ(0)",
+            backfaceVisibility: "hidden",
           }}
         />
       </div>

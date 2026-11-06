@@ -1,47 +1,37 @@
 "use client";
 
 import * as React from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { RadialGlowButton } from "@/components/ui/radial-glow-button";
-import { useScrollThreshold } from "@/hooks/use-scroll-threshold";
-
-const springConfig = {
-  type: "spring" as const,
-  stiffness: 220,
-  damping: 26,
-  mass: 0.8,
-};
 
 export function HeroCta() {
-  const scrolledPast = useScrollThreshold(340);
+  const { scrollY } = useScroll();
+
+  // Smoothly fade off (vanish) as user scrolls down between 20px and 220px
+  const opacity = useTransform(scrollY, [20, 220], [1, 0]);
+  const y = useTransform(scrollY, [20, 220], [0, -10]);
+  const scale = useTransform(scrollY, [20, 220], [1, 0.96]);
+  const pointerEvents = useTransform(scrollY, (latest) => (latest > 200 ? "none" : "auto"));
 
   return (
     <div className="mt-8 sm:mt-10 flex items-center justify-center min-h-[57px] sm:min-h-[65px]">
-      {!scrolledPast ? (
-        <motion.div
-          layoutId="hero-cta-button"
-          transition={springConfig}
-          className="relative inline-block"
-        >
+      <motion.div
+        style={{
+          opacity,
+          y,
+          scale,
+          pointerEvents,
+          willChange: "opacity, transform",
+        }}
+        className="relative inline-block transform-gpu"
+      >
+        <Link href="/register" className="inline-block">
           <RadialGlowButton size="default">
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.span
-                key="get-started"
-                initial={{ opacity: 0, y: 3 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -3 }}
-                transition={{ duration: 0.18 }}
-                className="inline-block"
-              >
-                Get Started
-              </motion.span>
-            </AnimatePresence>
+            <span className="inline-block">Get Started</span>
           </RadialGlowButton>
-        </motion.div>
-      ) : (
-        /* Invisible placeholder keeping the hero section height stable */
-        <div className="w-[170px] h-[57px] sm:h-[65px] pointer-events-none" aria-hidden />
-      )}
+        </Link>
+      </motion.div>
     </div>
   );
 }

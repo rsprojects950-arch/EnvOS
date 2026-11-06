@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { LiquidMetal } from "@/components/ui/liquid-metal";
 import { RadialGlowButton } from "@/components/ui/radial-glow-button";
-import { useScrollThreshold } from "@/hooks/use-scroll-threshold";
 import { cn } from "@/lib/utils";
 
 interface NavbarProps {
@@ -21,7 +21,13 @@ const springConfig = {
 
 export function Navbar({ className = "" }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
-  const scrolledPast = useScrollThreshold(340);
+  const { scrollY } = useScroll();
+
+  // Fades in slowly with the scroll at the point where Hero CTA fades out (180px to 320px)
+  const navCtaOpacity = useTransform(scrollY, [180, 320], [0, 1]);
+  const navCtaY = useTransform(scrollY, [180, 320], [8, 0]);
+  const navCtaScale = useTransform(scrollY, [180, 320], [0.95, 1]);
+  const navCtaPointerEvents = useTransform(scrollY, (v) => (v > 200 ? "auto" : "none"));
 
   useEffect(() => {
     const handleScroll = () => {
@@ -45,7 +51,10 @@ export function Navbar({ className = "" }: NavbarProps) {
   ];
 
   return (
-    <header className="fixed top-7 sm:top-8 inset-x-0 z-50 flex items-center justify-center pointer-events-none px-6 sm:px-10">
+    <header
+      className="fixed top-7 sm:top-8 inset-x-0 z-50 flex items-center justify-center pointer-events-none px-6 sm:px-10 transform-gpu"
+      style={{ transform: "translateZ(0)" }}
+    >
       {/* Corner Logo (visible when scrolled) */}
       <div className="absolute left-6 sm:left-10 top-1/2 -translate-y-1/2 pointer-events-auto">
         {scrolled && (
@@ -72,9 +81,10 @@ export function Navbar({ className = "" }: NavbarProps) {
         layout
         transition={springConfig}
         className={cn(
-          "pointer-events-auto relative rounded-full p-[2.5px] h-[57px] sm:h-[65px] flex items-center",
+          "pointer-events-auto relative rounded-full p-[2.5px] h-[57px] sm:h-[65px] flex items-center transform-gpu",
           className
         )}
+        style={{ transform: "translateZ(0)" }}
       >
         {/* Liquid Glass Pill Background Layer (z-0) */}
         <motion.div
@@ -82,7 +92,7 @@ export function Navbar({ className = "" }: NavbarProps) {
             opacity: scrolled ? 1 : 0,
           }}
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute inset-0 z-0 rounded-full pointer-events-none glass-liquid-bar backdrop-blur-xl backdrop-saturate-150 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)]"
+          className="absolute inset-0 z-0 rounded-full pointer-events-none glass-liquid-bar shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)]"
         />
 
         {/* Liquid Metal Border Layer (z-10, sits right on top of the rim) */}
@@ -153,30 +163,23 @@ export function Navbar({ className = "" }: NavbarProps) {
         </motion.div>
       </motion.nav>
 
-      {/* Right Corner Button (visible when scrolled past hero threshold) */}
-      <div className="absolute right-6 sm:right-10 top-1/2 -translate-y-1/2 pointer-events-auto flex items-center">
-        {scrolledPast && (
-          <motion.div
-            layoutId="hero-cta-button"
-            transition={springConfig}
-            className="flex items-center"
-          >
+      {/* Right Corner Button (fades in slowly with scroll at hero transition) */}
+      <div className="absolute right-6 sm:right-10 top-1/2 -translate-y-1/2 flex items-center">
+        <motion.div
+          style={{
+            opacity: navCtaOpacity,
+            y: navCtaY,
+            scale: navCtaScale,
+            pointerEvents: navCtaPointerEvents,
+          }}
+          className="flex items-center"
+        >
+          <Link href="/login" className="inline-block pointer-events-auto">
             <RadialGlowButton size="compact">
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.span
-                  key="login-signup"
-                  initial={{ opacity: 0, y: 3 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -3 }}
-                  transition={{ duration: 0.18 }}
-                  className="inline-block"
-                >
-                  Login/Sign Up
-                </motion.span>
-              </AnimatePresence>
+              <span className="inline-block">Login/Sign Up</span>
             </RadialGlowButton>
-          </motion.div>
-        )}
+          </Link>
+        </motion.div>
       </div>
     </header>
   );

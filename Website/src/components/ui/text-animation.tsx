@@ -6,24 +6,6 @@ import { cn } from "@/lib/utils";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
-const container = (stagger: number, delay: number) => ({
-  hidden: {},
-  show: {
-    transition: {
-      staggerChildren: stagger,
-      delayChildren: delay,
-    },
-  },
-});
-
-const item = {
-  hidden: { y: "110%" },
-  show: {
-    y: "0%",
-    transition: { duration: 0.6, ease: EASE },
-  },
-};
-
 export interface TextAnimationProps {
   children: React.ReactNode;
   delay?: number;
@@ -34,49 +16,18 @@ export interface TextAnimationProps {
 export const TextAnimation = ({
   children,
   delay = 0,
-  divideBy = "word",
   className,
 }: TextAnimationProps) => {
-  if (typeof children !== "string") {
-    if (typeof children === "number" || typeof children === "boolean") {
-      children = String(children);
-    } else {
-      console.warn("TextAnimation only supports plain text/string children.");
-      return <>{children}</>;
-    }
-  }
-
-  const text = children as string;
-  const parts = divideBy === "letter" ? text.split("") : text.split(" ");
-  const stagger = divideBy === "letter" ? 0.02 : 0.05;
-
   return (
     <motion.span
-      variants={container(stagger, delay)}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true }}
-      className={cn("inline-block", className)}
-      style={{ display: "inline-block" }}
+      initial={{ opacity: 0, y: 10 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "40px" }}
+      transition={{ duration: 0.4, delay: delay * 0.4, ease: EASE }}
+      className={cn("inline-block transform-gpu", className)}
+      style={{ willChange: "opacity, transform" }}
     >
-      {parts.map((part, i) => (
-        <span
-          key={i}
-          className="inline-block overflow-hidden relative"
-          style={{ verticalAlign: "top" }}
-        >
-          <motion.span
-            variants={item}
-            className="inline-block will-change-transform"
-          >
-            {divideBy === "letter"
-              ? part === " "
-                ? "\u00A0"
-                : part
-              : part + "\u00A0"}
-          </motion.span>
-        </span>
-      ))}
+      {children}
     </motion.span>
   );
 };

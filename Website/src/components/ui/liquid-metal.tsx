@@ -37,26 +37,69 @@ export const LiquidMetal = memo(function LiquidMetal({
   className,
   style,
 }: LiquidMetalProps) {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [hasInitialized, setHasInitialized] = React.useState(false);
+  const [isVisible, setIsVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined" || !("IntersectionObserver" in window)) {
+      setHasInitialized(true);
+      setIsVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setHasInitialized(true);
+          setIsVisible(true);
+        } else {
+          // Pause shader execution when off-screen to save GPU cycles,
+          // but do NOT unmount to prevent re-compilation freezes on scroll back
+          setIsVisible(false);
+        }
+      },
+      { rootMargin: "300px 0px" }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div
-      className={cn("absolute inset-0 z-0 overflow-hidden", className)}
-      style={style}
+      ref={containerRef}
+      className={cn("absolute inset-0 z-0 overflow-hidden transform-gpu", className)}
+      style={{ transform: "translateZ(0)", willChange: "transform", ...style }}
     >
-      <LiquidMetalShader
-        colorBack={colorBack}
-        colorTint={colorTint}
-        speed={speed}
-        repetition={repetition}
-        distortion={distortion}
-        softness={0}
-        shiftRed={0.3}
-        shiftBlue={-0.3}
-        angle={45}
-        shape="none"
-        scale={scale}
-        fit="cover"
-        style={{ width: "100%", height: "100%" }}
+      {/* Sleek metallic fallback/underlay so borders look stunning instantly */}
+      <div
+        className="absolute inset-0 z-0 opacity-40 bg-gradient-to-tr from-zinc-700 via-zinc-400 to-zinc-600"
+        aria-hidden
       />
+
+      {hasInitialized && (
+        <LiquidMetalShader
+          colorBack={colorBack}
+          colorTint={colorTint}
+          speed={isVisible ? speed : 0}
+          repetition={repetition}
+          distortion={distortion}
+          softness={0}
+          shiftRed={0.3}
+          shiftBlue={-0.3}
+          angle={45}
+          shape="none"
+          scale={scale}
+          fit="cover"
+          maxPixelCount={120000}
+          minPixelRatio={1}
+          style={{ width: "100%", height: "100%", transform: "translateZ(0)" }}
+        />
+      )}
     </div>
   );
 });

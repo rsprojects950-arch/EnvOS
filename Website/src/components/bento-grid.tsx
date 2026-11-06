@@ -40,16 +40,17 @@ export function FeatCard({ title, description, children, className = "", delay =
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
+      viewport={{ once: true, margin: "50px" }}
       transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        "group relative flex flex-col gap-2 overflow-hidden rounded-[24px] p-4 sm:p-5",
+        "group relative flex flex-col gap-2 overflow-hidden rounded-[24px] p-4 sm:p-5 transform-gpu",
         "shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)]",
         className
       )}
+      style={{ transform: "translateZ(0)" }}
     >
       {/* Liquid Glass Background Layer (z-0) - Exactly like the Navbar */}
-      <div className="absolute inset-0 z-0 rounded-[24px] pointer-events-none glass-liquid-bar backdrop-blur-xl backdrop-saturate-150" />
+      <div className="absolute inset-0 z-0 rounded-[24px] pointer-events-none glass-liquid-bar" />
 
       {/* Liquid Metal Border Layer (z-10, sits right on top of the rim) */}
       <div className="absolute inset-0 z-10 rounded-[24px] overflow-hidden pointer-events-none liquid-metal-border-mask">
@@ -77,7 +78,7 @@ export function FeatCard({ title, description, children, className = "", delay =
           </TextAnimation>
         </p>
       </div>
-      <div className="relative z-20 mt-2 flex-1 w-full min-h-[170px] rounded-[16px] overflow-hidden border border-white/10 bg-black/40 backdrop-blur-md pointer-events-auto">
+      <div className="relative z-20 mt-2 flex-1 w-full min-h-[170px] rounded-[16px] overflow-hidden border border-white/10 bg-black/50 pointer-events-auto">
         {children}
       </div>
     </motion.div>
@@ -382,7 +383,7 @@ export function Card2() {
               />
 
               <motion.div
-                className="absolute inset-0 w-full h-full rounded-xl bg-white/[0.06] backdrop-blur-md border border-white/10 p-2.5 hover:bg-white/[0.1] transition-colors duration-300 flex items-center justify-between gap-2 cursor-pointer shadow-sm"
+                className="absolute inset-0 w-full h-full rounded-xl bg-white/[0.06] border border-white/10 p-2.5 hover:bg-white/[0.1] transition-colors duration-300 flex items-center justify-between gap-2 cursor-pointer shadow-sm"
                 animate={{
                   x: isActive ? "0.35rem" : "0rem",
                   y: isActive ? "-0.35rem" : "0rem",
@@ -455,15 +456,15 @@ export function Card2() {
             }}
           >
             <motion.div
-              className="absolute bottom-0 left-0 right-0 bg-blue-500 border-t border-blue-400 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4)] rounded-t-[8px]"
-              initial={{ height: "0%" }}
+              className="absolute bottom-0 left-0 right-0 bg-blue-500 border-t border-blue-400 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4)] rounded-t-[8px] origin-bottom h-full"
+              initial={{ scaleY: 0 }}
               animate={{
-                height: [
-                  `${h}%`,
-                  `${Math.min(95, h + 15)}%`,
-                  `${Math.max(10, h - 20)}%`,
-                  `${Math.min(90, h + 8)}%`,
-                  `${h}%`
+                scaleY: [
+                  h / 100,
+                  Math.min(0.95, (h + 15) / 100),
+                  Math.max(0.1, (h - 20) / 100),
+                  Math.min(0.9, (h + 8) / 100),
+                  h / 100,
                 ],
               }}
               transition={{
@@ -557,7 +558,7 @@ export function Card3() {
               opacity: { duration: 0.25, ease: "easeOut" },
             }}
           >
-            <div className={`w-full rounded-2xl border flex items-center gap-2.5 backdrop-blur-md ${isActive
+            <div className={`w-full rounded-2xl border flex items-center gap-2.5 ${isActive
               ? "px-3 py-2 bg-white/[0.08] border-white/20 shadow-[0_8px_20px_rgba(0,0,0,0.4)]"
               : "px-2.5 py-1.5 bg-white/[0.03] border-white/10"
               }`}>
@@ -733,7 +734,7 @@ export function Card4() {
             return (
               <motion.div
                 key={`${q.ns}-${q.q}-${qi}`}
-                className="rounded-xl border border-white/10 bg-white/[0.05] backdrop-blur-md px-2 py-1.5"
+                className="rounded-xl border border-white/10 bg-white/[0.05] px-2 py-1.5"
                 initial={{ opacity: 0, y: -8 }}
                 animate={{
                   opacity: qi === 0 ? 1 : qi === 1 ? 0.8 : qi === 2 ? 0.5 : 0.25,
@@ -776,7 +777,7 @@ export function Card5() {
         {tools.map((t, i) => (
           <motion.div
             key={i}
-            className="relative rounded-[16px] border border-white/10 bg-white/[0.05] backdrop-blur-md shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between p-2.5 group hover:border-white/20 text-left"
+            className="relative rounded-[16px] border border-white/10 bg-white/[0.05] shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between p-2.5 group hover:border-white/20 text-left"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1, type: "spring", stiffness: 300, damping: 25 }}

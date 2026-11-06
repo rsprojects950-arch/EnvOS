@@ -32,22 +32,21 @@ function FeatureCard({
   delay,
   children,
 }: FeatureCardProps) {
-  const grainId = React.useId().replace(/:/g, "");
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
+      viewport={{ once: true, margin: "50px" }}
       transition={{ duration: 0.5, delay: delay * 0.5, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        "group relative flex flex-col justify-between overflow-hidden rounded-[24px] p-6 sm:p-7 text-left",
+        "group relative flex flex-col justify-between overflow-hidden rounded-[24px] p-6 sm:p-7 text-left transform-gpu",
         "shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)]",
         className
       )}
+      style={{ transform: "translateZ(0)" }}
     >
       {/* Liquid Glass Background Layer */}
-      <div className="absolute inset-0 z-0 rounded-[24px] pointer-events-none glass-liquid-bar backdrop-blur-xl backdrop-saturate-150" />
+      <div className="absolute inset-0 z-0 rounded-[24px] pointer-events-none glass-liquid-bar" />
 
       {/* Liquid Metal Border Layer */}
       <div className="absolute inset-0 z-10 rounded-[24px] overflow-hidden pointer-events-none liquid-metal-border-mask">
@@ -65,26 +64,11 @@ function FeatureCard({
       {/* Subtle radial lighting */}
       <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.06),transparent_60%)]" />
 
-      {/* Micro-grain texture overlay */}
-      <svg
+      {/* Lightweight micro-texture overlay */}
+      <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 z-10 size-full opacity-[0.05] mix-blend-soft-light"
-      >
-        <filter id={grainId} x="0" y="0" width="100%" height="100%">
-          <feTurbulence
-            type="fractalNoise"
-            baseFrequency="0.72"
-            numOctaves="4"
-            seed="11"
-            stitchTiles="stitch"
-          />
-          <feColorMatrix type="saturate" values="0" />
-          <feComponentTransfer>
-            <feFuncA type="table" tableValues="0 0.55" />
-          </feComponentTransfer>
-        </filter>
-        <rect width="100%" height="100%" filter={`url(#${grainId})`} />
-      </svg>
+        className="pointer-events-none absolute inset-0 z-10 opacity-[0.04] bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"
+      />
 
       {/* Content Layer */}
       <div className="relative z-20 flex flex-col h-full pointer-events-auto">

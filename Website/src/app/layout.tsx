@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Orbitron, JetBrains_Mono, Manrope } from "next/font/google";
+import { SmoothScrollProvider } from "@/components/providers/smooth-scroll-provider";
+import { SitePreloader } from "@/components/ui/site-preloader";
 import "./globals.css";
 
 const inter = Inter({
@@ -62,9 +64,27 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap"
           rel="stylesheet"
         />
+        <link
+          rel="preload"
+          href="/fonts/InstrumentSerif-Regular.ttf"
+          as="font"
+          type="font/ttf"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/InstrumentSerif-Italic.ttf"
+          as="font"
+          type="font/ttf"
+          crossOrigin="anonymous"
+        />
+        <link rel="preload" href="/envos-clean.png" as="image" />
       </head>
       <body className="min-h-full flex flex-col bg-[#050608] text-zinc-100 font-sans selection:bg-blue-500/30 selection:text-white">
-        {children}
+        <SmoothScrollProvider>
+          <SitePreloader />
+          {children}
+        </SmoothScrollProvider>
       </body>
     </html>
   );

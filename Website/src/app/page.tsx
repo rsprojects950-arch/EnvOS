@@ -13,7 +13,7 @@ export default function Page() {
       <Navbar />
 
       {/* Animated Rays Background pinned to viewport */}
-      <div className="fixed inset-0 pointer-events-none z-0">
+      <div className="fixed inset-0 pointer-events-none z-0 transform-gpu" style={{ transform: "translateZ(0)" }}>
         <AnimatedRays />
       </div>
 

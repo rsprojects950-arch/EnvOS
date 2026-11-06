@@ -1,0 +1,33 @@
+{
+  "name": "envos-runner",
+  "version": "1.0.0",
+  "description": "Dedicated Compute and Storage Server Node for EnvOS",
+  "type": "module",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsx watch src/server.ts",
+    "start:src": "tsx src/server.ts"
+  },
+  "dependencies": {
+    "chokidar": "^3.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "systeminformation": "^5.22.8",
+    "ws": "^8.17.0"
+  },
+  "optionalDependencies": {
+    "node-pty": "^1.0.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.24",
+    "@types/ws": "^8.5.10",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.3"
+  }
+}
+
