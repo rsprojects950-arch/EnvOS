@@ -13,6 +13,8 @@ export type RoomSyncEvent =
   | { type: "WORKSPACE_DISCARD"; payload: { roomCode: string } }
   | { type: "MEMBER_JOIN"; payload: Collaborator }
   | { type: "PING"; payload: { memberId: string } }
+  | { type: "CHAT_MESSAGE"; payload: any }
+  | { type: "NOTES_UPDATE"; payload: { notes: string; sender?: string } }
   | {
       type: "CURSOR_MOVE";
       payload: {

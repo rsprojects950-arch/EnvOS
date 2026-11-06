@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   Play,
   RotateCcw,
   FileCode,
   FolderTree,
+  Folder,
+  FolderOpen,
   Plus,
   Trash2,
   Copy,
@@ -21,6 +23,20 @@ import {
   CheckCircle2,
   RefreshCw,
   Cloud,
+  Search,
+  GitBranch,
+  Settings,
+  X,
+  Maximize2,
+  Minimize2,
+  Split,
+  Box,
+  PanelBottom,
+  AlertCircle,
+  HelpCircle,
+  Hash,
+  FileJson,
+  FileSpreadsheet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -60,14 +76,14 @@ export const INITIAL_WORKSPACE_FILES: WorkspaceFiles = {
           <span class="value">3.2 ms</span>
         </div>
         <div class="stat-pill">
-          <span class="label">PROTOCOL</span>
-          <span class="value">Duplex PTY</span>
+          <span class="label">STORAGE</span>
+          <span class="value">Laptop 2 SSD</span>
         </div>
       </div>
 
       <div class="interactive-box">
         <button id="counterBtn" class="primary-btn" onclick="handleCounter()">
-          <span>⚡ Click Counter:</span>
+          <span>⚡ Live Counter:</span>
           <span id="clickCount" class="counter-badge">0</span>
         </button>
         <button id="greetBtn" class="secondary-btn" onclick="sendGreeting()">
@@ -77,7 +93,7 @@ export const INITIAL_WORKSPACE_FILES: WorkspaceFiles = {
 
       <div id="outputLog" class="output-console">
         <div class="log-line text-cyan">➜ Connected to ws_room localhost:3000</div>
-        <div class="log-line text-emerald">✓ Express HTTP runtime operational</div>
+        <div class="log-line text-emerald">✓ Express HTTP runtime operational on Laptop 2</div>
       </div>
     </div>
   </div>
@@ -86,7 +102,7 @@ export const INITIAL_WORKSPACE_FILES: WorkspaceFiles = {
 </body>
 </html>`,
 
-  "style.css": `/* Modern Dark Glassmorphic Theme for EnvOS Apps */
+  "style.css": `/* Modern Dark Liquid-Glass Theme for EnvOS Apps */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -230,10 +246,6 @@ h1 {
   box-shadow: 0 6px 22px rgba(2, 132, 199, 0.5);
 }
 
-.primary-btn:active {
-  transform: translateY(0);
-}
-
 .counter-badge {
   background: rgba(255, 255, 255, 0.25);
   padding: 2px 8px;
@@ -261,114 +273,102 @@ h1 {
 }
 
 .output-console {
-  background: #090d16;
+  background: #030712;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 14px 16px;
-  text-align: left;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 11.5px;
   line-height: 1.6;
+  text-align: left;
   max-height: 120px;
   overflow-y: auto;
 }
 
 .log-line {
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .text-cyan { color: #38bdf8; }
 .text-emerald { color: #34d399; }
-.text-amber { color: #fbbf24; }
 `,
 
-  "app.js": `// Interactive Browser Client Logic
-let clickCounter = 0;
-
-console.log("[EnvOS App] Runtime script initialized.");
+  "app.js": `// Interactive Client Script
+let count = 0;
 
 function handleCounter() {
-  clickCounter++;
-  const countEl = document.getElementById("clickCount");
-  if (countEl) {
-    countEl.innerText = clickCounter;
+  count++;
+  const badge = document.getElementById('clickCount');
+  if (badge) {
+    badge.innerText = count;
   }
-  
-  appendLog(\`[Click] Counter updated to \${clickCounter}\`, "text-cyan");
-  console.log(\`[Counter Event] user pressed counter button: \${clickCounter}\`);
+  log('⚡ Counter bumped: ' + count, 'text-cyan');
 }
 
 function sendGreeting() {
-  const time = new Date().toLocaleTimeString();
-  appendLog(\`[Ping \${time}] Heartbeat sent to Laptop 2 Runner.\`, "text-amber");
-  console.log(\`[Heartbeat] ws_room active at \${time}\`);
+  log('👋 Ping sent to Laptop 2 Compute Node at ' + new Date().toLocaleTimeString(), 'text-emerald');
 }
 
-function appendLog(message, colorClass = "text-cyan") {
-  const logEl = document.getElementById("outputLog");
-  if (!logEl) return;
-  
-  const line = document.createElement("div");
-  line.className = "log-line " + colorClass;
-  line.innerText = message;
-  logEl.appendChild(line);
-  logEl.scrollTop = logEl.scrollHeight;
+function log(msg, colorClass) {
+  const consoleEl = document.getElementById('outputLog');
+  if (consoleEl) {
+    const line = document.createElement('div');
+    line.className = 'log-line ' + (colorClass || 'text-cyan');
+    line.innerText = '➜ ' + msg;
+    consoleEl.appendChild(line);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
 }
+
+console.log('[EnvOS Live Preview] JavaScript runtime ready.');
 `,
 
-  "server.js": `// Node.js Express Server (runs on Laptop 2 runner SSD)
+  "server.js": `// Express HTTP Server running on Laptop 2
 const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.static('.'));
 
-app.get('/api/status', (req, res) => {
+app.get('/api/health', (req, res) => {
   res.json({
     status: 'online',
-    runner: 'Laptop 2 (WS-HOST)',
-    environment: 'EnvOS v2.4 Tahoe',
-    duplexLatencyMs: 3.2,
-    timestamp: Date.now()
+    runner: 'Laptop 2 Physical Compute Node',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
   });
 });
 
 app.listen(PORT, () => {
-  console.log(\`EnvOS Node Server listening on http://localhost:\${PORT}\`);
+  console.log(\`[EnvOS] Server running physically on Laptop 2 at http://localhost:\${PORT}\`);
 });
 `,
 
   "package.json": `{
-  "name": "envos-workspace-app",
+  "name": "envos-project",
   "version": "1.0.0",
-  "private": true,
-  "description": "Collaborative web application powered by EnvOS Cloud OS",
+  "description": "Collaborative project running on EnvOS Laptop 2 Runner",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js",
+    "dev": "node --watch server.js",
     "test": "echo \\"Error: no test specified\\" && exit 1"
   },
   "dependencies": {
     "express": "^4.19.2",
-    "ws": "^8.16.0"
+    "ws": "^8.17.0"
   }
 }
 `,
 
   "README.md": `# EnvOS Workspace Code Studio
 
-Welcome to your collaborative cloud workspace!
+Welcome to your collaborative cloud workspace running directly on **Laptop 2**!
 
 ### Features
-- **Live Two-Way Sync**: Edit \`index.html\`, \`style.css\`, or \`app.js\` and click **Run in Safari** to see instant changes.
-- **Safari Live Preview**: Tests interactive buttons, DOM events, and styles inside a real embedded browser.
-- **Physical Runner**: Connected to Laptop 2 via low-latency duplex WebSocket.
-
-### Keyboard Shortcuts
-- \`Cmd+Enter\` / \`Ctrl+Enter\`: Run and update preview in Safari
-- \`Tab\`: Insert 2-space indentation
-- \`Cmd+S\` / \`Ctrl+S\`: Save workspace file
+- **Physical Execution**: All commands and files execute on Laptop 2's physical SSD and RAM.
+- **Integrated Terminal**: Embedded at the bottom of the IDE with real-time duplex stream.
+- **Safari Live Preview**: Instant testing on port 3000 with real-time reload.
 `
 };
 
@@ -377,7 +377,10 @@ interface WorkspaceIdeProps {
   files: WorkspaceFiles;
   onChangeFiles: (files: WorkspaceFiles) => void;
   onRunInSafari: () => void;
-  onOpenTerminal?: () => void;
+  terminalLogs?: string[];
+  onTerminalSubmit?: (cmd: string) => void;
+  isRunnerConnected?: boolean;
+  runnerPing?: number | null;
   canEdit?: boolean;
   isSaving?: boolean;
   lastSaved?: Date | null;
@@ -388,7 +391,10 @@ export function WorkspaceIde({
   files,
   onChangeFiles,
   onRunInSafari,
-  onOpenTerminal,
+  terminalLogs = [],
+  onTerminalSubmit,
+  isRunnerConnected = true,
+  runnerPing = 3.2,
   canEdit = true,
   isSaving = false,
   lastSaved = null,
@@ -399,17 +405,38 @@ export function WorkspaceIde({
     "index.html",
     "style.css",
     "app.js",
+    "server.js",
   ]);
-  const [newFileName, setNewFileName] = useState("");
+
+  // Sidebar navigation state (Explorer vs Search vs Git)
+  const [activeSidebarNav, setActiveSidebarNav] = useState<"explorer" | "search" | "git">("explorer");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Bottom Terminal Panel State (VS Code layout matching Image 1)
+  const [isBottomPanelOpen, setIsBottomPanelOpen] = useState(true);
+  const [bottomTab, setBottomTab] = useState<"terminal" | "problems" | "output" | "debug">("terminal");
+  const [terminalInputVal, setTerminalInputVal] = useState("");
+  const terminalScrollRef = useRef<HTMLDivElement>(null);
+
+  // New file/folder state
   const [isAddingFile, setIsAddingFile] = useState(false);
+  const [newFileName, setNewFileName] = useState("");
   const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
   const [copied, setCopied] = useState(false);
   const [justRan, setJustRan] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
 
   const currentContent = files[activeFile] ?? "";
+
+  // Auto-scroll terminal when new logs arrive
+  useEffect(() => {
+    if (terminalScrollRef.current) {
+      terminalScrollRef.current.scrollTop = terminalScrollRef.current.scrollHeight;
+    }
+  }, [terminalLogs]);
 
   // Synchronize scroll between line numbers gutter and textarea
   const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
@@ -451,14 +478,12 @@ export function WorkspaceIde({
       const end = target.selectionEnd;
       const value = target.value;
 
-      // Insert 2 spaces
       const newValue = value.substring(0, start) + "  " + value.substring(end);
       onChangeFiles({
         ...files,
         [activeFile]: newValue,
       });
 
-      // Restore cursor position
       setTimeout(() => {
         target.selectionStart = target.selectionEnd = start + 2;
       }, 0);
@@ -523,287 +548,565 @@ export function WorkspaceIde({
     }
   };
 
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(currentContent);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+  const handleTerminalSubmitInternal = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!terminalInputVal.trim()) return;
+    onTerminalSubmit?.(terminalInputVal.trim());
+    setTerminalInputVal("");
   };
 
   // Compute line count
   const lineCount = Math.max(1, currentContent.split("\n").length);
   const lineNumbers = Array.from({ length: lineCount }, (_, i) => i + 1);
 
-  // File icon helper
+  // File icon helper matching modern IDEs
   const getFileIcon = (name: string) => {
-    if (name.endsWith(".html")) return <FileCode className="w-4 h-4 text-orange-400" />;
-    if (name.endsWith(".css")) return <FileCode className="w-4 h-4 text-cyan-400" />;
-    if (name.endsWith(".js") || name.endsWith(".ts")) return <FileCode className="w-4 h-4 text-amber-300" />;
-    if (name.endsWith(".json")) return <FileCode className="w-4 h-4 text-emerald-400" />;
-    if (name.endsWith(".md")) return <FileText className="w-4 h-4 text-purple-400" />;
-    return <FileCode className="w-4 h-4 text-zinc-400" />;
+    if (name.endsWith(".html")) return <span className="text-orange-400 font-bold text-[11px]">HTML</span>;
+    if (name.endsWith(".css")) return <Hash className="w-3.5 h-3.5 text-cyan-400 shrink-0" />;
+    if (name.endsWith(".js")) return <span className="text-yellow-400 font-bold text-[11px]">JS</span>;
+    if (name.endsWith(".ts")) return <span className="text-sky-400 font-bold text-[11px]">TS</span>;
+    if (name.endsWith(".json")) return <span className="text-amber-400 font-bold text-[11px]">{`{}`}</span>;
+    if (name.endsWith(".md")) return <FileText className="w-3.5 h-3.5 text-purple-400 shrink-0" />;
+    return <FileCode className="w-3.5 h-3.5 text-zinc-400 shrink-0" />;
   };
 
   return (
-    <div className="flex-1 flex overflow-hidden font-manrope bg-[#07090e] text-zinc-200 select-none">
-      {/* 1. LEFT SIDEBAR: FILE EXPLORER */}
-      <div className="w-56 bg-[#04060a] border-r border-white/10 flex flex-col justify-between text-xs select-none">
-        <div className="flex flex-col h-full overflow-hidden">
-          {/* Workspace Title Header */}
-          <div className="p-3 border-b border-white/10 flex items-center justify-between">
-            <div className="flex items-center gap-2 overflow-hidden">
-              <FolderTree className="w-4 h-4 text-cyan-400 shrink-0" />
-              <span className="font-bold text-white truncate tracking-tight text-[11px] uppercase">
-                ws_{roomCode.toLowerCase()}
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsAddingFile(true)}
-              className="p-1 rounded hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
-              title="Create New File"
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
-          </div>
+    <div className="flex-1 flex flex-col h-full overflow-hidden font-manrope bg-[#0b0f19] text-zinc-200 select-none">
+      {/* ========================================================================= */}
+      {/* 1. IDE TOP TITLE BAR & RUN ACTION (matching Image 1)                      */}
+      {/* ========================================================================= */}
+      <div className="h-8 px-3 bg-[#080b12] border-b border-white/10 flex items-center justify-between text-xs text-zinc-400 select-none">
+        <div className="flex items-center gap-2">
+          <Code2 className="w-4 h-4 text-cyan-400" />
+          <span className="font-semibold text-white tracking-tight">EnvOS Code Studio</span>
+          <span className="text-[11px] text-zinc-500 font-mono">— ws_{roomCode.toLowerCase()} ({activeFile})</span>
+        </div>
 
-          {/* New File Inline Input */}
-          {isAddingFile && (
-            <form onSubmit={handleCreateFile} className="p-2 border-b border-white/10 bg-white/[0.02]">
-              <input
-                autoFocus
-                type="text"
-                value={newFileName}
-                onChange={(e) => setNewFileName(e.target.value)}
-                onBlur={() => {
-                  if (!newFileName.trim()) setIsAddingFile(false);
-                }}
-                placeholder="filename.js..."
-                className="w-full px-2 py-1 rounded bg-black/60 border border-cyan-500/50 text-white text-xs font-mono focus:outline-none"
-              />
-            </form>
+        <div className="flex items-center gap-2">
+          {justRan && (
+            <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Preview Live in Safari</span>
+            </span>
           )}
 
-          {/* File List */}
-          <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
-            <div className="px-2 py-1 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
-              Project Files
-            </div>
-            {fileKeys.map((fileName) => {
-              const isActive = activeFile === fileName;
-              return (
-                <div
-                  key={fileName}
-                  onClick={() => handleSelectFile(fileName)}
-                  className={cn(
-                    "group px-2.5 py-1.5 rounded-lg flex items-center justify-between transition-colors cursor-pointer text-xs",
-                    isActive
-                      ? "bg-cyan-500/20 text-cyan-200 border border-cyan-500/30 font-medium"
-                      : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
-                  )}
-                >
-                  <div className="flex items-center gap-2 truncate">
-                    {getFileIcon(fileName)}
-                    <span className="truncate">{fileName}</span>
-                  </div>
-                  {fileKeys.length > 1 && !["index.html", "server.js"].includes(fileName) && (
-                    <button
-                      type="button"
-                      onClick={(e) => handleDeleteFile(fileName, e)}
-                      className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-rose-500/20 hover:text-rose-300 text-zinc-500 transition-all"
-                      title="Delete file"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          <button
+            type="button"
+            onClick={triggerRun}
+            className="px-2.5 py-1 rounded-md bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm hover:scale-[1.02] active:scale-[0.98]"
+            title="Run application and stream to Safari Browser (⌘Enter)"
+          >
+            <Play className="w-3 h-3 fill-emerald-300" />
+            <span>Run in Safari</span>
+          </button>
 
-          {/* Quick Runner Status & Tools in Sidebar */}
-          <div className="p-3 border-t border-white/10 bg-white/[0.01] space-y-2">
-            <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
-              Active Runner
-            </div>
-            <div className="flex items-center gap-2 text-[11px] text-emerald-400 font-medium">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Laptop 2 (WS-HOST)</span>
-            </div>
-
-            <div className="pt-2 flex flex-col gap-1">
-              <button
-                type="button"
-                onClick={triggerRun}
-                className="w-full px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
-              >
-                <Play className="w-3 h-3 fill-emerald-300" />
-                <span>Run in Safari</span>
-              </button>
-              {onOpenTerminal && (
-                <button
-                  type="button"
-                  onClick={onOpenTerminal}
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <TerminalIcon className="w-3 h-3 text-cyan-400" />
-                  <span>Cloud Shell</span>
-                </button>
-              )}
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsBottomPanelOpen(!isBottomPanelOpen)}
+            className={cn(
+              "p-1 rounded hover:bg-white/10 transition-colors cursor-pointer",
+              isBottomPanelOpen ? "text-cyan-400" : "text-zinc-500 hover:text-white"
+            )}
+            title="Toggle Integrated Terminal"
+          >
+            <PanelBottom className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      {/* 2. MAIN EDITOR COLUMN */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-[#07090e]">
-        {/* Editor Tab Bar */}
-        <div className="h-9 bg-[#04060a] border-b border-white/10 flex items-center justify-between px-2 overflow-x-auto text-xs">
-          {/* Tabs */}
-          <div className="flex items-center gap-1 h-full overflow-x-auto">
-            {openTabs.map((tab) => {
-              const isActive = activeFile === tab;
-              return (
-                <div
-                  key={`tab-${tab}`}
-                  onClick={() => setActiveFile(tab)}
-                  className={cn(
-                    "h-full px-3 flex items-center gap-2 border-r border-white/5 cursor-pointer transition-colors text-xs select-none",
-                    isActive
-                      ? "bg-[#0b0e17] text-white border-t-2 border-t-cyan-400 font-semibold"
-                      : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]"
-                  )}
-                >
-                  {getFileIcon(tab)}
-                  <span>{tab}</span>
-                  {openTabs.length > 1 && (
+      {/* ========================================================================= */}
+      {/* 2. MAIN BODY: ACTIVITY BAR + SIDEBAR + EDITOR & TERMINAL (Image 1)        */}
+      {/* ========================================================================= */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* A. FAR LEFT ACTIVITY BAR (44px) */}
+        <div className="w-11 bg-[#05080f] border-r border-white/10 flex flex-col justify-between items-center py-2 shrink-0">
+          <div className="flex flex-col items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (activeSidebarNav === "explorer") setIsSidebarOpen(!isSidebarOpen);
+                else {
+                  setActiveSidebarNav("explorer");
+                  setIsSidebarOpen(true);
+                }
+              }}
+              className={cn(
+                "p-2 rounded-lg transition-colors cursor-pointer relative",
+                activeSidebarNav === "explorer" && isSidebarOpen
+                  ? "text-cyan-400 bg-white/10"
+                  : "text-zinc-500 hover:text-zinc-200 hover:bg-white/5"
+              )}
+              title="Explorer (Files)"
+            >
+              <FolderTree className="w-4 h-4" />
+              {activeSidebarNav === "explorer" && isSidebarOpen && (
+                <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-cyan-400 rounded-r" />
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (activeSidebarNav === "search") setIsSidebarOpen(!isSidebarOpen);
+                else {
+                  setActiveSidebarNav("search");
+                  setIsSidebarOpen(true);
+                }
+              }}
+              className={cn(
+                "p-2 rounded-lg transition-colors cursor-pointer relative",
+                activeSidebarNav === "search" && isSidebarOpen
+                  ? "text-cyan-400 bg-white/10"
+                  : "text-zinc-500 hover:text-zinc-200 hover:bg-white/5"
+              )}
+              title="Search Workspace"
+            >
+              <Search className="w-4 h-4" />
+              {activeSidebarNav === "search" && isSidebarOpen && (
+                <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-cyan-400 rounded-r" />
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (activeSidebarNav === "git") setIsSidebarOpen(!isSidebarOpen);
+                else {
+                  setActiveSidebarNav("git");
+                  setIsSidebarOpen(true);
+                }
+              }}
+              className={cn(
+                "p-2 rounded-lg transition-colors cursor-pointer relative",
+                activeSidebarNav === "git" && isSidebarOpen
+                  ? "text-cyan-400 bg-white/10"
+                  : "text-zinc-500 hover:text-zinc-200 hover:bg-white/5"
+              )}
+              title="Source Control"
+            >
+              <GitBranch className="w-4 h-4" />
+              {activeSidebarNav === "git" && isSidebarOpen && (
+                <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-cyan-400 rounded-r" />
+              )}
+            </button>
+          </div>
+
+          <div className="flex flex-col items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setIsBottomPanelOpen(!isBottomPanelOpen)}
+              className="p-2 text-zinc-500 hover:text-white rounded-lg hover:bg-white/5 cursor-pointer"
+              title="Integrated Terminal"
+            >
+              <TerminalIcon className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* B. COLLAPSIBLE SIDEBAR: EXPLORER / SEARCH / GIT (Image 1) */}
+        {isSidebarOpen && (
+          <div className="w-56 bg-[#070a12] border-r border-white/10 flex flex-col justify-between text-xs select-none shrink-0">
+            {activeSidebarNav === "explorer" && (
+              <div className="flex flex-col h-full overflow-hidden">
+                {/* Header */}
+                <div className="p-2.5 border-b border-white/10 flex items-center justify-between">
+                  <span className="font-bold text-white text-[11px] tracking-wider uppercase">
+                    EXPLORER
+                  </span>
+                  <div className="flex items-center gap-1">
                     <button
                       type="button"
-                      onClick={(e) => handleCloseTab(tab, e)}
-                      className="ml-1 text-zinc-500 hover:text-white rounded-full p-0.5"
+                      onClick={() => setIsAddingFile(true)}
+                      className="p-1 rounded hover:bg-white/10 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                      title="New File"
                     >
-                      ×
+                      <Plus className="w-3.5 h-3.5" />
                     </button>
-                  )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // refresh
+                      }}
+                      className="p-1 rounded hover:bg-white/10 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                      title="Refresh Explorer"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
 
-          {/* Action Buttons in Tab Bar */}
-          <div className="flex items-center gap-2 pl-3 shrink-0">
-            {justRan && (
-              <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1 animate-fadeIn">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Live in Safari</span>
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={handleCopyCode}
-              className="p-1 rounded hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
-              title="Copy Code"
-            >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            </button>
-            <button
-              type="button"
-              onClick={triggerRun}
-              className="px-3 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm hover:scale-[1.02] active:scale-[0.98]"
-              title="Run and preview code in Safari (⌘Enter)"
-            >
-              <Play className="w-3 h-3 fill-emerald-300" />
-              <span>Run in Safari</span>
-            </button>
-          </div>
-        </div>
+                {/* Workspace Folder Node (Image 1 style) */}
+                <div className="flex-1 overflow-y-auto p-1.5 space-y-0.5 font-mono text-[11.5px]">
+                  <div className="px-1.5 py-1 flex items-center gap-1.5 font-semibold text-zinc-300">
+                    <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
+                    <FolderOpen className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="text-white truncate">ws_{roomCode.toLowerCase()}</span>
+                  </div>
 
-        {/* Code Editor Body (Gutter + Textarea) */}
-        <div className="flex-1 flex overflow-hidden relative bg-[#07090e] text-xs font-mono">
-          {/* Synchronized Line Numbers Gutter */}
-          <div
-            ref={lineNumbersRef}
-            className="w-12 py-3 bg-[#05070c] border-r border-white/5 text-zinc-600 text-right pr-3 select-none overflow-hidden font-mono text-[11px] leading-6"
-          >
-            {lineNumbers.map((num) => (
-              <div
-                key={`line-${num}`}
-                className={num === cursorPos.line ? "text-cyan-400 font-bold" : ""}
-              >
-                {num}
+                  {/* Inline New File Form */}
+                  {isAddingFile && (
+                    <form onSubmit={handleCreateFile} className="px-4 py-1">
+                      <input
+                        autoFocus
+                        type="text"
+                        value={newFileName}
+                        onChange={(e) => setNewFileName(e.target.value)}
+                        onBlur={() => {
+                          if (!newFileName.trim()) setIsAddingFile(false);
+                        }}
+                        placeholder="filename.js..."
+                        className="w-full px-2 py-0.5 rounded bg-black/60 border border-cyan-500/50 text-white text-xs font-mono focus:outline-none"
+                      />
+                    </form>
+                  )}
+
+                  {/* File List */}
+                  <div className="pl-4 space-y-0.5">
+                    {fileKeys.map((fileName) => {
+                      const isActive = activeFile === fileName;
+                      return (
+                        <div
+                          key={fileName}
+                          onClick={() => handleSelectFile(fileName)}
+                          className={cn(
+                            "group px-2 py-1 rounded-md flex items-center justify-between transition-colors cursor-pointer",
+                            isActive
+                              ? "bg-cyan-500/20 text-cyan-200 border border-cyan-500/30 font-semibold"
+                              : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+                          )}
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            {getFileIcon(fileName)}
+                            <span className="truncate">{fileName}</span>
+                          </div>
+                          {fileKeys.length > 1 && !["index.html", "server.js"].includes(fileName) && (
+                            <button
+                              type="button"
+                              onClick={(e) => handleDeleteFile(fileName, e)}
+                              className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-rose-500/20 hover:text-rose-300 text-zinc-500 transition-all cursor-pointer"
+                              title="Delete file"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Bottom Runner Node Pill */}
+                <div className="p-2.5 border-t border-white/10 bg-white/[0.01] flex items-center justify-between text-[11px] font-mono">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-emerald-400">Laptop 2</span>
+                  </div>
+                  <span className="text-zinc-500">{runnerPing ?? 3}ms</span>
+                </div>
               </div>
-            ))}
+            )}
+
+            {activeSidebarNav === "search" && (
+              <div className="p-3 space-y-3">
+                <span className="font-bold text-white text-[11px] tracking-wider uppercase block">
+                  SEARCH
+                </span>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search in files..."
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/10 text-white text-xs font-mono focus:outline-none focus:border-cyan-500/50"
+                />
+                <div className="text-[11px] text-zinc-500">
+                  {searchQuery ? `Searching for "${searchQuery}" in ${fileKeys.length} files...` : "Type keyword to find in workspace"}
+                </div>
+              </div>
+            )}
+
+            {activeSidebarNav === "git" && (
+              <div className="p-3 space-y-3">
+                <span className="font-bold text-white text-[11px] tracking-wider uppercase block">
+                  SOURCE CONTROL
+                </span>
+                <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-xs">
+                  <div className="flex items-center gap-1.5 text-cyan-300 font-mono font-semibold">
+                    <GitBranch className="w-3.5 h-3.5" />
+                    <span>feat/CU-14zg7e2f2rh</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400 mt-1">All changes synced to GitHub repository & Laptop 2.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* C. CENTER COLUMN: TABS + CODE EDITOR + INTEGRATED TERMINAL (Image 1) */}
+        <div className="flex-1 flex flex-col overflow-hidden bg-[#0a0d17]">
+          {/* Editor Tabs (VS Code style matching Image 1) */}
+          <div className="h-9 bg-[#060810] border-b border-white/10 flex items-center justify-between px-1 overflow-x-auto text-xs shrink-0">
+            <div className="flex items-center gap-0.5 h-full overflow-x-auto">
+              {openTabs.map((tab) => {
+                const isActive = activeFile === tab;
+                return (
+                  <div
+                    key={`tab-${tab}`}
+                    onClick={() => setActiveFile(tab)}
+                    className={cn(
+                      "h-full px-3 flex items-center gap-2 border-r border-white/5 cursor-pointer transition-colors text-xs font-mono select-none group",
+                      isActive
+                        ? "bg-[#0b0f19] text-white border-t-2 border-t-cyan-400 font-medium"
+                        : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]"
+                    )}
+                  >
+                    {getFileIcon(tab)}
+                    <span>{tab}</span>
+                    {openTabs.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={(e) => handleCloseTab(tab, e)}
+                        className="ml-1 text-zinc-500 hover:text-white rounded-full p-0.5 opacity-60 group-hover:opacity-100 cursor-pointer"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Save Status Indicator */}
+            <div className="flex items-center gap-3 pr-2 shrink-0">
+              {isSaving ? (
+                <span className="text-amber-400 flex items-center gap-1 text-[11px] font-mono">
+                  <RefreshCw className="w-3 h-3 animate-spin" />
+                  <span>Saving to Laptop 2...</span>
+                </span>
+              ) : (
+                <span className="text-emerald-400/80 flex items-center gap-1 text-[11px] font-mono">
+                  <Cloud className="w-3 h-3 text-emerald-400" />
+                  <span>Synced</span>
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* Code Textarea with Keyboard & Tab Handling */}
-          <div className="flex-1 relative overflow-hidden h-full">
-            <textarea
-              ref={textareaRef}
-              disabled={!canEdit}
-              value={currentContent}
-              onChange={(e) => {
-                onChangeFiles({
-                  ...files,
-                  [activeFile]: e.target.value,
-                });
-              }}
-              onScroll={handleScroll}
-              onSelect={handleTextareaSelect}
-              onKeyUp={handleTextareaSelect}
-              onClick={handleTextareaSelect}
-              onKeyDown={handleKeyDown}
-              spellCheck={false}
-              autoCapitalize="off"
-              autoComplete="off"
-              autoCorrect="off"
-              className="w-full h-full p-3 bg-transparent text-zinc-200 font-mono text-[12.5px] leading-6 resize-none focus:outline-none whitespace-pre overflow-auto selection:bg-cyan-500/30"
-              placeholder="// Write code here..."
-            />
-          </div>
-        </div>
+          {/* Code Editor Body (Gutter + Textarea) */}
+          <div className="flex-1 flex overflow-hidden relative bg-[#090c15] text-xs font-mono">
+            {/* Line Numbers Gutter */}
+            <div
+              ref={lineNumbersRef}
+              className="w-12 py-3 bg-[#060810] border-r border-white/5 text-zinc-600 text-right pr-3 select-none overflow-hidden font-mono text-[11px] leading-6 shrink-0"
+            >
+              {lineNumbers.map((num) => (
+                <div
+                  key={`line-${num}`}
+                  className={num === cursorPos.line ? "text-cyan-400 font-bold" : ""}
+                >
+                  {num}
+                </div>
+              ))}
+            </div>
 
-        {/* Editor Bottom Status Bar */}
-        <div className="h-6 px-3 bg-[#04060a] border-t border-white/10 flex items-center justify-between text-[11px] font-mono text-zinc-500 select-none">
-          <div className="flex items-center gap-3">
-            <span>
-              Ln {cursorPos.line}, Col {cursorPos.col}
-            </span>
-            <span>•</span>
-            <span>UTF-8</span>
-            <span>•</span>
-            <span className="text-cyan-400">
-              {activeFile.endsWith(".html")
-                ? "HTML5"
-                : activeFile.endsWith(".css")
-                ? "CSS3"
-                : activeFile.endsWith(".js")
-                ? "JavaScript (ES6)"
-                : activeFile.endsWith(".json")
-                ? "JSON"
-                : "Markdown"}
-            </span>
+            {/* Code Textarea */}
+            <div className="flex-1 relative overflow-hidden h-full">
+              <textarea
+                ref={textareaRef}
+                disabled={!canEdit}
+                value={currentContent}
+                onChange={(e) => {
+                  onChangeFiles({
+                    ...files,
+                    [activeFile]: e.target.value,
+                  });
+                }}
+                onScroll={handleScroll}
+                onSelect={handleTextareaSelect}
+                onKeyUp={handleTextareaSelect}
+                onClick={handleTextareaSelect}
+                onKeyDown={handleKeyDown}
+                spellCheck={false}
+                autoCapitalize="off"
+                autoComplete="off"
+                autoCorrect="off"
+                className="w-full h-full p-3 bg-transparent text-zinc-100 font-mono text-[12.5px] leading-6 resize-none focus:outline-none whitespace-pre overflow-auto selection:bg-cyan-500/30"
+                placeholder="// Write code here..."
+              />
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            {isSaving ? (
-              <span className="text-amber-400 flex items-center gap-1.5 text-[10.5px]">
-                <RefreshCw className="w-3 h-3 animate-spin" />
-                <span>Saving to Cloud...</span>
+          {/* ===================================================================== */}
+          {/* D. INTEGRATED BOTTOM PANEL (TERMINAL / PROBLEMS / OUTPUT) (Image 1)  */}
+          {/* ===================================================================== */}
+          {isBottomPanelOpen && (
+            <div className="h-56 bg-[#05070e] border-t border-white/10 flex flex-col shrink-0">
+              {/* Panel Header Tabs (Problems, Output, Debug Console, Terminal) */}
+              <div className="h-7 px-3 bg-[#03050a] border-b border-white/5 flex items-center justify-between text-[11px] font-mono text-zinc-400 select-none">
+                <div className="flex items-center gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setBottomTab("problems")}
+                    className={cn(
+                      "hover:text-white cursor-pointer transition-colors",
+                      bottomTab === "problems" ? "text-white font-bold border-b border-cyan-400" : "text-zinc-500"
+                    )}
+                  >
+                    Problems <span className="text-[10px] bg-white/10 px-1 rounded">0</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBottomTab("output")}
+                    className={cn(
+                      "hover:text-white cursor-pointer transition-colors",
+                      bottomTab === "output" ? "text-white font-bold border-b border-cyan-400" : "text-zinc-500"
+                    )}
+                  >
+                    Output
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBottomTab("terminal")}
+                    className={cn(
+                      "hover:text-white cursor-pointer transition-colors flex items-center gap-1.5",
+                      bottomTab === "terminal" ? "text-cyan-400 font-bold border-b border-cyan-400" : "text-zinc-500"
+                    )}
+                  >
+                    <TerminalIcon className="w-3 h-3" />
+                    <span>Terminal</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBottomTab("debug")}
+                    className={cn(
+                      "hover:text-white cursor-pointer transition-colors",
+                      bottomTab === "debug" ? "text-white font-bold border-b border-cyan-400" : "text-zinc-500"
+                    )}
+                  >
+                    Debug Console
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-zinc-500">node Laptop 2</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsBottomPanelOpen(false)}
+                    className="p-1 text-zinc-500 hover:text-white rounded hover:bg-white/10 cursor-pointer"
+                    title="Close Panel"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Panel Content */}
+              <div className="flex-1 p-3 overflow-hidden flex flex-col font-mono text-xs text-zinc-300">
+                {bottomTab === "terminal" && (
+                  <div className="flex-1 flex flex-col overflow-hidden">
+                    {/* Terminal Logs Output */}
+                    <div
+                      ref={terminalScrollRef}
+                      className="flex-1 overflow-y-auto space-y-1 font-mono text-[12px] leading-relaxed pr-2 select-text"
+                    >
+                      {terminalLogs.map((log, index) => (
+                        <div key={`integrated-term-${index}`}>
+                          {log.includes("@laptop2") ? (
+                            <span className="text-cyan-300">{log}</span>
+                          ) : log.includes("Ready") || log.includes("✓") || log.includes("operational") ? (
+                            <span className="text-emerald-400">{log}</span>
+                          ) : log.includes("ACCESS DENIED") || log.includes("Error") ? (
+                            <span className="text-rose-400">{log}</span>
+                          ) : (
+                            <span className="text-zinc-400">{log}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Integrated Interactive Command Input */}
+                    <form onSubmit={handleTerminalSubmitInternal} className="pt-2 flex items-center gap-2 border-t border-white/5">
+                      <span className="text-cyan-400 shrink-0 font-mono text-xs">
+                        envos@laptop2:~/workspaces/ws_{roomCode.toLowerCase()}$
+                      </span>
+                      <input
+                        type="text"
+                        value={terminalInputVal}
+                        onChange={(e) => setTerminalInputVal(e.target.value)}
+                        placeholder="Type 'npm start', 'ls', 'node -v', 'git status'..."
+                        className="flex-1 bg-transparent text-white font-mono text-xs focus:outline-none placeholder:text-zinc-600"
+                      />
+                    </form>
+                  </div>
+                )}
+
+                {bottomTab === "problems" && (
+                  <div className="flex items-center justify-center h-full text-zinc-500 text-xs">
+                    No problems have been detected in the workspace.
+                  </div>
+                )}
+
+                {bottomTab === "output" && (
+                  <div className="space-y-1 font-mono text-[11px] text-zinc-400">
+                    <div>[EnvOS Build System] Compiler initialized for ws_{roomCode}.</div>
+                    <div>[Runner Bridge] Telemetry heartbeat active every 2500ms.</div>
+                    <div>[Watchpack] Watching project directory for live changes.</div>
+                  </div>
+                )}
+
+                {bottomTab === "debug" && (
+                  <div className="flex items-center justify-center h-full text-zinc-500 text-xs">
+                    Debugger idle. Run `node --inspect server.js` in terminal to attach debugger.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ===================================================================== */}
+          {/* E. STATUS BAR AT BOTTOM (VS Code style matching Image 1)             */}
+          {/* ===================================================================== */}
+          <div className="h-6 px-3 bg-[#03050a] border-t border-white/10 flex items-center justify-between text-[11px] font-mono text-zinc-400 select-none shrink-0">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1.5 text-cyan-400">
+                <GitBranch className="w-3.5 h-3.5" />
+                <span>feat/CU-14zg7e2f2rh</span>
               </span>
-            ) : lastSaved ? (
-              <span className="text-emerald-400/90 flex items-center gap-1.5 text-[10.5px]">
-                <Cloud className="w-3 h-3 text-emerald-400" />
-                <span>Cloud Synced</span>
+              <span>•</span>
+              <span className="flex items-center gap-1">
+                <AlertCircle className="w-3 h-3 text-emerald-400" />
+                <span>0</span>
               </span>
-            ) : null}
-            <span>Press ⌘+Enter to Run in Safari</span>
-            <span className="text-emerald-400 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              Node.js v20 (ws_{roomCode})
-            </span>
+              <span>•</span>
+              <span className="text-zinc-500">
+                Ln {cursorPos.line}, Col {cursorPos.col}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="text-emerald-400 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <span>Laptop 2 ({runnerPing ?? 3}ms)</span>
+              </span>
+              <span>•</span>
+              <span>UTF-8</span>
+              <span>•</span>
+              <span className="text-cyan-300 font-semibold">
+                {activeFile.endsWith(".html")
+                  ? "HTML5"
+                  : activeFile.endsWith(".css")
+                  ? "CSS3"
+                  : activeFile.endsWith(".js")
+                  ? "JavaScript"
+                  : activeFile.endsWith(".ts")
+                  ? "TypeScript"
+                  : activeFile.endsWith(".json")
+                  ? "JSON"
+                  : "Markdown"}
+              </span>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
 }
-

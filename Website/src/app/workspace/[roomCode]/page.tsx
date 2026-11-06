@@ -35,6 +35,9 @@ import {
   ShieldCheck,
   Search,
   X,
+  Folder,
+  FolderOpen,
+  Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -62,8 +65,19 @@ import {
   INITIAL_WORKSPACE_FILES,
   WorkspaceFiles,
 } from "@/components/workspace/workspace-ide";
+import { FileExplorer } from "@/components/workspace/file-explorer";
+import { RoleMatrixModal } from "@/components/workspace/role-matrix-modal";
 import { SafariBrowser } from "@/components/workspace/safari-browser";
 import { supabase } from "@/lib/supabase";
+
+interface ChatMessage {
+  id: string;
+  sender: string;
+  senderColor?: string;
+  isHost?: boolean;
+  text: string;
+  timestamp: string;
+}
 
 function LiquidMetalTile({
   children,
@@ -271,6 +285,13 @@ function WorkspaceContent({ roomCode }: { roomCode: string }) {
             collaborators: [...prev.collaborators, event.payload],
           };
         });
+      } else if (event.type === "CHAT_MESSAGE") {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === event.payload.id)) return prev;
+          return [...prev, event.payload];
+        });
+      } else if (event.type === "NOTES_UPDATE") {
+        setNotesContent(event.payload.notes);
       }
     });
 
@@ -278,8 +299,8 @@ function WorkspaceContent({ roomCode }: { roomCode: string }) {
   }, [roomCode, currentUserName, isHost, router]);
 
   // Desktop OS State
-  const [openWindows, setOpenWindows] = useState<string[]>([]);
-  const [focusedWindow, setFocusedWindow] = useState<string | null>(null);
+  const [openWindows, setOpenWindows] = useState<string[]>(["ide"]);
+  const [focusedWindow, setFocusedWindow] = useState<string | null>("ide");
   const [showAppleMenu, setShowAppleMenu] = useState(false);
   const [showControlCenter, setShowControlCenter] = useState(false);
   const [showLaunchpad, setShowLaunchpad] = useState(false);
@@ -329,12 +350,12 @@ function WorkspaceContent({ roomCode }: { roomCode: string }) {
       keywords: ["safari", "browser", "web", "preview", "http", "localhost"],
     },
     {
-      title: "Cloud Shell",
-      description: "Interactive POSIX terminal on Laptop 2 runner",
+      title: "File Explorer",
+      description: "Browse files and directories in ws_" + roomCode,
       category: "Application",
-      icon: <TerminalIcon className="w-4 h-4 text-emerald-400" />,
-      action: () => toggleWindow("terminal"),
-      keywords: ["terminal", "shell", "bash", "pty", "npm", "cmd"],
+      icon: <Folder className="w-4 h-4 text-cyan-400" />,
+      action: () => toggleWindow("finder"),
+      keywords: ["finder", "files", "folder", "explorer", "directory", "workspace"],
     },
     {
       title: "System Settings",
@@ -441,6 +462,32 @@ function WorkspaceContent({ roomCode }: { roomCode: string }) {
   const [notesContent, setNotesContent] = useState(
     `# Project Workspace Notes (${roomCode})\n\n- Host: Krishna (Laptop 1 Master)\n- Compute Runner: Laptop 2 (WS-HOST)\n- Express HTTP Server port: 3000\n- Collaborative Cursors: Active`
   );
+  const notesDebounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Messages / Chat State
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: "msg-1",
+      sender: "Krishna",
+      senderColor: "from-amber-400 to-yellow-600",
+      isHost: true,
+      text: `Welcome to room ws_${roomCode}! Cursors and runtime are online.`,
+      timestamp: "Just now",
+    },
+    {
+      id: "msg-2",
+      sender: "Laptop 2 Runner",
+      senderColor: "from-emerald-400 to-teal-600",
+      isHost: false,
+      text: `Physical compute active on Laptop 2. Duplex PTY connected.`,
+      timestamp: "Just now",
+    },
+  ]);
+  const [chatInput, setChatInput] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Help & Roles Matrix Modal State
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   // Live Workspace Project Files & Bundle
   const [workspaceFiles, setWorkspaceFiles] = useState<WorkspaceFiles>(INITIAL_WORKSPACE_FILES);
@@ -487,6 +534,20 @@ function WorkspaceContent({ roomCode }: { roomCode: string }) {
         } else if (typeof window !== "undefined") {
           const saved = localStorage.getItem("envos_runner_url");
           if (saved) setRunnerUrl(saved);
+        }
+
+        if (wsData?.os_state?.notes) {
+          setNotesContent(wsData.os_state.notes);
+        }
+        if (wsData?.os_state?.messages && Array.isArray(wsData.os_state.messages)) {
+          setMessages(wsData.os_state.messages);
+        }
+        if (wsData?.os_state?.open_windows && Array.isArray(wsData.os_state.open_windows)) {
+          const filtered = wsData.os_state.open_windows.filter((w: string) => w !== "terminal");
+          if (filtered.length > 0) {
+            setOpenWindows(filtered);
+            setFocusedWindow(filtered[filtered.length - 1]);
+          }
         }
 
         // 2. Load workspace files from public.workspace_files
@@ -757,31 +818,187 @@ function WorkspaceContent({ roomCode }: { roomCode: string }) {
   };
 
   const toggleWindow = (id: string) => {
-    const targetId = id === "finder" ? "ide" : id;
-    if (targetId === "launchpad") {
+    if (id === "launchpad") {
       setShowLaunchpad((prev) => !prev);
       return;
     }
     setOpenWindows((prev) => {
-      if (!prev.includes(targetId)) {
-        return [...prev, targetId];
+      if (!prev.includes(id)) {
+        return [...prev, id];
       }
-      if (focusedWindow !== targetId) {
+      if (focusedWindow !== id) {
         return prev;
       }
-      return prev.filter((w) => w !== targetId);
+      return prev.filter((w) => w !== id);
     });
-    setFocusedWindow(targetId);
+    setFocusedWindow(id);
     setShowAppleMenu(false);
     setShowControlCenter(false);
   };
 
   const closeWindow = (id: string) => {
-    const targetId = id === "finder" ? "ide" : id;
-    setOpenWindows((prev) => prev.filter((w) => w !== targetId && (targetId !== "ide" || w !== "finder")));
-    if (focusedWindow === targetId || (targetId === "ide" && focusedWindow === "finder")) {
+    setOpenWindows((prev) => prev.filter((w) => w !== id));
+    if (focusedWindow === id) {
       setFocusedWindow(null);
     }
+  };
+
+  // Scroll to bottom on new messages
+  useEffect(() => {
+    if (openWindows.includes("messages")) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, openWindows]);
+
+  // Real-time Chat message sender
+  const handleSendMessage = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!chatInput.trim()) return;
+
+    const newMsg: ChatMessage = {
+      id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      sender: currentUserName,
+      senderColor: currentMember.avatarColor,
+      isHost,
+      text: chatInput.trim(),
+      timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+    };
+
+    setMessages((prev) => {
+      const updated = [...prev, newMsg];
+      Promise.resolve(
+        supabase
+          .from("workspaces")
+          .update({
+            os_state: {
+              messages: updated.slice(-60),
+            },
+          })
+          .eq("room_code", roomCode.toUpperCase())
+      ).catch(() => {});
+      return updated;
+    });
+
+    broadcastRoomEvent(roomCode, {
+      type: "CHAT_MESSAGE",
+      payload: newMsg,
+    });
+
+    setChatInput("");
+  };
+
+  // Real-time collaborative notes change
+  const handleNotesChange = (val: string) => {
+    setNotesContent(val);
+
+    broadcastRoomEvent(roomCode, {
+      type: "NOTES_UPDATE",
+      payload: { notes: val },
+    });
+
+    if (notesDebounceTimer.current) {
+      clearTimeout(notesDebounceTimer.current);
+    }
+    notesDebounceTimer.current = setTimeout(async () => {
+      try {
+        await supabase
+          .from("workspaces")
+          .update({
+            os_state: {
+              notes: val,
+            },
+          })
+          .eq("room_code", roomCode.toUpperCase());
+      } catch (err) {
+        console.warn("[Notes Sync] Error saving notes:", err);
+      }
+    }, 800);
+  };
+
+  // Terminal submission and command execution
+  const executeCommand = (rawCmd: string) => {
+    const cmd = rawCmd.trim();
+    if (!cmd) return;
+
+    if (!roleMeta.caps.canExecuteTerminal) {
+      setTerminalLogs((prev) => [
+        ...prev,
+        `[ACCESS DENIED] Your role '${roleMeta.badgeLabel}' is restricted to Read-Only stream. Shell execution is locked.`,
+      ]);
+      return;
+    }
+
+    if (!roomState.policies.allowPty) {
+      setTerminalLogs((prev) => [
+        ...prev,
+        `[POLICY VIOLATION] PTY execution is disabled by Host Krishna in room policy. Commands are suspended.`,
+      ]);
+      return;
+    }
+
+    if (cmd === "clear") {
+      setTerminalLogs([]);
+      if (runnerWsRef.current && runnerWsRef.current.readyState === WebSocket.OPEN) {
+        runnerWsRef.current.send(JSON.stringify({ type: "stdin", data: "clear\r" }));
+      }
+      return;
+    }
+
+    // 1. Live Execution: Forward keystrokes to Laptop 2 node-pty runner
+    if (runnerWsRef.current && runnerWsRef.current.readyState === WebSocket.OPEN) {
+      setTerminalLogs((prev) => [
+        ...prev,
+        `${currentUserName.toLowerCase()}@laptop2:~/workspaces/ws_${roomCode}$ ${cmd}`,
+      ]);
+      runnerWsRef.current.send(JSON.stringify({ type: "stdin", data: cmd + "\r" }));
+      return;
+    }
+
+    // 2. Offline Fallback (when Laptop 2 runner is not active)
+    const newLogs = [
+      ...terminalLogs,
+      `${currentUserName.toLowerCase()}@laptop2:~/workspaces/ws_${roomCode}$ ${cmd}`,
+      `[LAPTOP 2 DISCONNECTED] Command executing in local emulator mode. Connect runner for bare-metal POSIX execution.`,
+    ];
+
+    if (cmd === "help") {
+      newLogs.push("Available commands: npm start, ls, pwd, uname -a, clear, status, ping, env, roles");
+    } else if (cmd === "roles") {
+      newLogs.push(`Active Room Roster (${roomState.collaborators.length} peers):`);
+      roomState.collaborators.forEach((c) => {
+        newLogs.push(`- ${c.name}: [${c.role.toUpperCase()}] (${c.status})`);
+      });
+    } else if (cmd === "npm start" || cmd === "node server.js") {
+      newLogs.push("Starting HTTP Server on port 3000 on Laptop 2 runner...");
+      newLogs.push("✓ Ready: http://localhost:3000/ (Tunnel: https://ws-" + roomCode.toLowerCase() + ".envos.sh)");
+    } else if (cmd === "ls") {
+      newLogs.push(Object.keys(workspaceFiles).join("  ") + "  node_modules/");
+    } else if (cmd === "pwd") {
+      newLogs.push(`/home/envos/workspaces/ws_${roomCode}`);
+    } else if (cmd === "status") {
+      newLogs.push(`Runner: Laptop 2 | CPU: 12.1% | Mem: 1.8GB / 16GB | Active Role: ${roleMeta.badgeLabel}`);
+    } else if (cmd === "env") {
+      if (roomState.policies.maskSecrets && !isHost) {
+        newLogs.push("NODE_ENV=production");
+        newLogs.push("API_KEY=•••••••••••••••• (Masked by Host Policy)");
+        newLogs.push("DATABASE_URL=postgres://••••:••••@db.internal:5432/sandbox");
+      } else {
+        newLogs.push("NODE_ENV=production");
+        newLogs.push("API_KEY=sk_live_envos_9814890123");
+        newLogs.push("DATABASE_URL=postgres://envos:secret99@db.internal:5432/sandbox");
+      }
+    } else {
+      newLogs.push(`Executed '${cmd}' on Laptop 2 emulator.`);
+    }
+
+    setTerminalLogs(newLogs);
+  };
+
+  const handleTerminalSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!terminalInput.trim()) return;
+    executeCommand(terminalInput);
+    setTerminalInput("");
   };
 
   // Host launches the desktop
@@ -842,90 +1059,6 @@ function WorkspaceContent({ roomCode }: { roomCode: string }) {
       type: "STATE_UPDATE",
       payload: updated,
     });
-  };
-
-  // Terminal submission
-  const handleTerminalSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!terminalInput.trim()) return;
-
-    if (!roleMeta.caps.canExecuteTerminal) {
-      setTerminalLogs((prev) => [
-        ...prev,
-        `[ACCESS DENIED] Your role '${roleMeta.badgeLabel}' is restricted to Read-Only stream. Shell execution is locked.`,
-      ]);
-      setTerminalInput("");
-      return;
-    }
-
-    if (!roomState.policies.allowPty) {
-      setTerminalLogs((prev) => [
-        ...prev,
-        `[POLICY VIOLATION] PTY execution is disabled by Host Krishna in room policy. Commands are suspended.`,
-      ]);
-      setTerminalInput("");
-      return;
-    }
-
-    const cmd = terminalInput.trim();
-    setTerminalInput("");
-
-    if (cmd === "clear") {
-      setTerminalLogs([]);
-      if (runnerWsRef.current && runnerWsRef.current.readyState === WebSocket.OPEN) {
-        runnerWsRef.current.send(JSON.stringify({ type: "stdin", data: "clear\r" }));
-      }
-      return;
-    }
-
-    // 1. Live Execution: Forward keystrokes to Laptop 2 node-pty runner
-    if (runnerWsRef.current && runnerWsRef.current.readyState === WebSocket.OPEN) {
-      setTerminalLogs((prev) => [
-        ...prev,
-        `${currentUserName.toLowerCase()}@laptop2:~/workspaces/ws_${roomCode}$ ${cmd}`,
-      ]);
-      runnerWsRef.current.send(JSON.stringify({ type: "stdin", data: cmd + "\r" }));
-      return;
-    }
-
-    // 2. Offline Fallback (when Laptop 2 runner is not active)
-    const newLogs = [
-      ...terminalLogs,
-      `${currentUserName.toLowerCase()}@laptop2:~/workspaces/ws_${roomCode}$ ${cmd}`,
-      `[LAPTOP 2 DISCONNECTED] Command executing in local emulator mode. Connect runner for bare-metal POSIX execution.`,
-    ];
-
-    if (cmd === "help") {
-      newLogs.push("Available commands: npm start, ls, pwd, uname -a, clear, status, ping, env, roles");
-    } else if (cmd === "roles") {
-      newLogs.push(`Active Room Roster (${roomState.collaborators.length} peers):`);
-      roomState.collaborators.forEach((c) => {
-        newLogs.push(`- ${c.name}: [${c.role.toUpperCase()}] (${c.status})`);
-      });
-    } else if (cmd === "npm start" || cmd === "node server.js") {
-      newLogs.push("Starting HTTP Server on port 3000 on Laptop 2 runner...");
-      newLogs.push("✓ Ready: http://localhost:3000/ (Tunnel: https://ws-" + roomCode.toLowerCase() + ".envos.sh)");
-    } else if (cmd === "ls") {
-      newLogs.push("server.js  package.json  README.md  node_modules/  .env");
-    } else if (cmd === "pwd") {
-      newLogs.push(`/home/envos/workspaces/ws_${roomCode}`);
-    } else if (cmd === "status") {
-      newLogs.push(`Runner: Laptop 2 | CPU: 12.1% | Mem: 1.8GB / 16GB | Active Role: ${roleMeta.badgeLabel}`);
-    } else if (cmd === "env") {
-      if (roomState.policies.maskSecrets && !isHost) {
-        newLogs.push("NODE_ENV=production");
-        newLogs.push("API_KEY=•••••••••••••••• (Masked by Host Policy)");
-        newLogs.push("DATABASE_URL=postgres://••••:••••@db.internal:5432/sandbox");
-      } else {
-        newLogs.push("NODE_ENV=production");
-        newLogs.push("API_KEY=sk_live_envos_9814890123");
-        newLogs.push("DATABASE_URL=postgres://envos:secret99@db.internal:5432/sandbox");
-      }
-    } else {
-      newLogs.push(`Executed '${cmd}' on Laptop 2 emulator.`);
-    }
-
-    setTerminalLogs(newLogs);
   };
 
   // Prevent hydration mismatch
@@ -1095,37 +1228,13 @@ function WorkspaceContent({ roomCode }: { roomCode: string }) {
           </div>
           <span
             className="font-normal text-white/90 cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => toggleWindow("ide")}
+            onClick={() => toggleWindow("finder")}
           >
             File
           </span>
           <span
             className="font-normal text-white/90 cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => toggleWindow("ide")}
-          >
-            Edit
-          </span>
-          <span
-            className="font-normal text-white/90 cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => toggleWindow("safari")}
-          >
-            View
-          </span>
-          <span
-            className="font-normal text-white/90 cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => toggleWindow("launchpad")}
-          >
-            Go
-          </span>
-          <span
-            className="font-normal text-white/90 cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => toggleWindow("ide")}
-          >
-            Window
-          </span>
-          <span
-            className="font-normal text-white/90 cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => toggleWindow("notes")}
+            onClick={() => setIsHelpOpen(true)}
           >
             Help
           </span>
@@ -1349,7 +1458,7 @@ function WorkspaceContent({ roomCode }: { roomCode: string }) {
       {/* FLOATING MACOS WINDOWS (Finder, Code, Terminal, Safari, Settings, Notes, Messages) */}
       <AnimatePresence>
         {/* 1. ENVOS IDE WINDOW */}
-        {(openWindows.includes("ide") || openWindows.includes("finder")) && (
+        {openWindows.includes("ide") && (
           <MacWindow
             key="window-ide"
             id="ide"
@@ -1358,7 +1467,7 @@ function WorkspaceContent({ roomCode }: { roomCode: string }) {
             isOpen={true}
             onClose={() => closeWindow("ide")}
             onFocus={() => setFocusedWindow("ide")}
-            zIndex={focusedWindow === "ide" || focusedWindow === "finder" ? 35 : 25}
+            zIndex={focusedWindow === "ide" ? 35 : 25}
             defaultWidth="max-w-5xl w-[92vw]"
             defaultHeight="h-[620px]"
           >
@@ -1367,83 +1476,57 @@ function WorkspaceContent({ roomCode }: { roomCode: string }) {
               files={workspaceFiles}
               onChangeFiles={handleFilesChange}
               onRunInSafari={handleRunInSafari}
-              onOpenTerminal={() => toggleWindow("terminal")}
               canEdit={roleMeta.caps.canEditCode}
               isSaving={isSavingFiles}
               lastSaved={lastSavedTime}
+              terminalLogs={terminalLogs}
+              onTerminalSubmit={executeCommand}
+              isRunnerConnected={isRunnerConnected}
+              runnerPing={runnerPing}
             />
           </MacWindow>
         )}
 
-        {/* 2. POSIX TERMINAL WINDOW */}
-        {openWindows.includes("terminal") && (
+        {/* 2. FINDER / FILE EXPLORER WINDOW */}
+        {openWindows.includes("finder") && (
           <MacWindow
-            key="window-terminal"
-            id="terminal"
-            title={`Laptop 2 POSIX Terminal — ws_${roomCode}`}
-            icon={<TerminalIcon className="w-3.5 h-3.5 text-emerald-400" />}
+            key="window-finder"
+            id="finder"
+            title={`Workspace Files — ws_${roomCode}`}
+            icon={<Folder className="w-3.5 h-3.5 text-cyan-400" />}
             isOpen={true}
-            onClose={() => closeWindow("terminal")}
-            onFocus={() => setFocusedWindow("terminal")}
-            zIndex={focusedWindow === "terminal" ? 35 : 25}
-            defaultWidth="max-w-3xl w-[86vw]"
-            defaultHeight="h-[460px]"
+            onClose={() => closeWindow("finder")}
+            onFocus={() => setFocusedWindow("finder")}
+            zIndex={focusedWindow === "finder" ? 35 : 25}
+            defaultWidth="max-w-4xl w-[88vw]"
+            defaultHeight="h-[520px]"
           >
-            <div className="flex-1 flex flex-col bg-[#040508]/95 p-3.5 font-manrope text-xs overflow-hidden">
-              <div className="flex-1 overflow-y-auto space-y-1.5 pr-2">
-                {terminalLogs.map((log, index) => (
-                  <div key={`term-log-${index}`} className="leading-relaxed">
-                    {log.includes("@laptop2") ? (
-                      <span className="text-cyan-300">{log}</span>
-                    ) : log.includes("Ready") || log.includes("✓") ? (
-                      <span className="text-emerald-400">{log}</span>
-                    ) : log.includes("ACCESS DENIED") || log.includes("VIOLATION") ? (
-                      <span className="text-rose-400 font-semibold">{log}</span>
-                    ) : (
-                      <span className="text-zinc-400">{log}</span>
-                    )}
-                  </div>
-                ))}
-
-                <form onSubmit={handleTerminalSubmit} className="flex items-center gap-2 pt-2">
-                  <span className="text-cyan-400 shrink-0">
-                    {currentUserName.toLowerCase()}@laptop2:~$
-                  </span>
-                  <input
-                    type="text"
-                    disabled={!roleMeta.caps.canExecuteTerminal || !roomState.policies.allowPty}
-                    value={terminalInput}
-                    onChange={(e) => setTerminalInput(e.target.value)}
-                    placeholder={
-                      !roleMeta.caps.canExecuteTerminal
-                        ? "Interactive shell locked for your role..."
-                        : !roomState.policies.allowPty
-                        ? "PTY execution locked by room policy..."
-                        : "type 'npm start', 'help', or 'roles'..."
-                    }
-                    className="w-full bg-transparent font-manrope text-xs text-white placeholder:text-zinc-600 focus:outline-none"
-                  />
-                </form>
-              </div>
-
-              <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
-                <div className="flex items-center gap-2">
-                  <span className="flex items-center gap-1.5">
-                    <span
-                      className={cn(
-                        "w-1.5 h-1.5 rounded-full",
-                        isRunnerConnected ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
-                      )}
-                    />
-                    <span className={isRunnerConnected ? "text-emerald-400" : "text-amber-400"}>
-                      {isRunnerConnected ? `Laptop 2 (Online • ${runnerPing ?? 2}ms)` : "Laptop 2 (Offline Emulator)"}
-                    </span>
-                  </span>
-                  <span>• ws_{roomCode}</span>
-                </div>
-                <span>Role: {roleMeta.badgeLabel}</span>
-              </div>
-            </div>
+            <FileExplorer
+              roomCode={roomCode}
+              files={workspaceFiles}
+              onOpenFileInIde={(fileName) => {
+                if (!openWindows.includes("ide")) {
+                  setOpenWindows((prev) => [...prev, "ide"]);
+                }
+                setFocusedWindow("ide");
+              }}
+              onDeleteFile={(fileName) => {
+                const nextFiles = { ...workspaceFiles };
+                delete nextFiles[fileName];
+                handleFilesChange(nextFiles);
+              }}
+              onCreateFile={(fileName) => {
+                const nextFiles = {
+                  ...workspaceFiles,
+                  [fileName]: fileName.endsWith(".json")
+                    ? "{\n  \n}"
+                    : fileName.endsWith(".html")
+                    ? "<!DOCTYPE html>\n<html>\n<head></head>\n<body></body>\n</html>"
+                    : `// ${fileName}\n`,
+                };
+                handleFilesChange(nextFiles);
+              }}
+            />
           </MacWindow>
         )}
 
@@ -1592,14 +1675,26 @@ function WorkspaceContent({ roomCode }: { roomCode: string }) {
             onFocus={() => setFocusedWindow("notes")}
             zIndex={focusedWindow === "notes" ? 35 : 25}
             defaultWidth="max-w-xl w-[80vw]"
-            defaultHeight="h-[420px]"
+            defaultHeight="h-[460px]"
           >
-            <div className="flex-1 p-4 flex flex-col bg-[#1c1917]/90 text-zinc-100 font-manrope">
+            <div className="flex-1 flex flex-col bg-[#1c1917]/95 text-zinc-100 font-manrope overflow-hidden">
+              <div className="px-3.5 py-2 bg-amber-950/30 border-b border-amber-500/20 flex items-center justify-between text-[11px] text-amber-300/80">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                  <span>Real-time Sync Active</span>
+                </div>
+                <span>{notesContent.length} chars • {notesContent.split(/\s+/).filter(Boolean).length} words</span>
+              </div>
               <textarea
                 value={notesContent}
-                onChange={(e) => setNotesContent(e.target.value)}
-                className="w-full h-full bg-transparent resize-none focus:outline-none font-manrope text-xs leading-relaxed text-amber-100/90"
+                onChange={(e) => handleNotesChange(e.target.value)}
+                placeholder="Type workspace notes, scratchpad items, or architecture plans..."
+                className="flex-1 p-4 bg-transparent resize-none focus:outline-none font-mono text-xs leading-relaxed text-amber-100/90 placeholder:text-amber-200/30 selection:bg-amber-500/30"
               />
+              <div className="px-3 py-1.5 bg-black/30 border-t border-white/5 text-[10px] text-zinc-500 flex items-center justify-between">
+                <span>Shared with all room collaborators</span>
+                <span>Auto-saved to cloud</span>
+              </div>
             </div>
           </MacWindow>
         )}
@@ -1609,31 +1704,81 @@ function WorkspaceContent({ roomCode }: { roomCode: string }) {
           <MacWindow
             key="window-messages"
             id="messages"
-            title={`Messages — Room ${roomCode}`}
+            title={`Messages — Room ${roomCode} (${roomState.collaborators.length} online)`}
             icon={<MessageSquare className="w-3.5 h-3.5 text-emerald-400" />}
             isOpen={true}
             onClose={() => closeWindow("messages")}
             onFocus={() => setFocusedWindow("messages")}
             zIndex={focusedWindow === "messages" ? 35 : 25}
-            defaultWidth="max-w-md w-[80vw]"
-            defaultHeight="h-[440px]"
+            defaultWidth="max-w-md w-[85vw]"
+            defaultHeight="h-[480px]"
           >
-            <div className="flex-1 p-4 flex flex-col justify-between bg-zinc-950/90 text-xs font-manrope">
-              <div className="space-y-3 overflow-y-auto">
-                <div className="p-2.5 rounded-xl bg-white/[0.05] border border-white/10 text-zinc-300">
-                  <span className="font-semibold text-cyan-300">Krishna (Host):</span> Welcome to room ws_{roomCode}! Cursors and runtime are online.
+            <div className="flex-1 flex flex-col bg-zinc-950/95 text-xs font-manrope overflow-hidden">
+              {/* Header Info */}
+              <div className="px-3.5 py-2 bg-white/[0.03] border-b border-white/10 flex items-center justify-between text-[11px] text-zinc-400">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-zinc-200 font-medium">Team Chat</span>
                 </div>
-                <div className="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-200">
-                  <span className="font-semibold">Rahul Patel:</span> Runner attached with 3.2ms ping.
-                </div>
+                <span className="font-mono text-[10px] text-zinc-500">{roomState.collaborators.length} collaborators</span>
               </div>
-              <div className="pt-2 border-t border-white/10">
+
+              {/* Messages list */}
+              <div className="flex-1 p-3.5 space-y-3 overflow-y-auto">
+                {messages.map((msg) => {
+                  const isMe = msg.sender.toLowerCase() === currentUserName.toLowerCase();
+                  return (
+                    <div
+                      key={msg.id}
+                      className={cn(
+                        "flex flex-col gap-1 max-w-[85%]",
+                        isMe ? "ml-auto items-end" : "mr-auto items-start"
+                      )}
+                    >
+                      <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
+                        <span className={cn("font-semibold", isMe ? "text-cyan-300" : "text-zinc-300")}>
+                          {isMe ? "You" : msg.sender}
+                        </span>
+                        {msg.isHost && (
+                          <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            Host
+                          </span>
+                        )}
+                        <span className="text-zinc-500 font-mono text-[9px]">{msg.timestamp}</span>
+                      </div>
+                      <div
+                        className={cn(
+                          "px-3 py-2 rounded-2xl text-xs leading-relaxed break-words",
+                          isMe
+                            ? "bg-cyan-600 text-white rounded-tr-none shadow-md"
+                            : "bg-white/[0.08] text-zinc-100 rounded-tl-none border border-white/10 shadow-sm"
+                        )}
+                      >
+                        {msg.text}
+                      </div>
+                    </div>
+                  );
+                })}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Message Input form */}
+              <form onSubmit={handleSendMessage} className="p-2.5 bg-black/40 border-t border-white/10 flex items-center gap-2">
                 <input
                   type="text"
-                  placeholder="Send a message to room..."
-                  className="w-full px-3 py-2 rounded-xl bg-white/[0.05] border border-white/10 text-white placeholder:text-zinc-600 focus:outline-none font-manrope"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Type a message to collaborators..."
+                  className="flex-1 px-3 py-2 rounded-xl bg-white/[0.06] border border-white/10 text-white placeholder:text-zinc-500 focus:outline-none focus:border-cyan-500/50 text-xs font-manrope"
                 />
-              </div>
+                <button
+                  type="submit"
+                  disabled={!chatInput.trim()}
+                  className="px-3 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white disabled:opacity-40 transition-all cursor-pointer flex items-center justify-center shrink-0"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                </button>
+              </form>
             </div>
           </MacWindow>
         )}
@@ -1876,6 +2021,12 @@ function WorkspaceContent({ roomCode }: { roomCode: string }) {
           />
         </div>
       </div>
+
+      {/* WORKSPACE OPTIONS & ROLE-WISE ACCESS MATRIX MODAL (Triggered by Help in Top Bar) */}
+      <RoleMatrixModal
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+      />
     </div>
   );
 }

@@ -272,11 +272,10 @@ export function TerminalAppIcon() {
   );
 }
 
-// Active Dock Icons (EnvOS IDE, Safari, Terminal, Messages, Notes, Launchpad, Settings)
+// Active Dock Icons (EnvOS IDE, Safari, Messages, Notes, Launchpad, Settings)
 export const MACOS_APPS: DockAppItem[] = [
   { id: "ide", name: "EnvOS IDE", icon: <IdeIcon /> },
   { id: "safari", name: "Safari Browser", icon: <SafariIcon /> },
-  { id: "terminal", name: "Cloud Shell", icon: <TerminalAppIcon /> },
   { id: "messages", name: "Messages", icon: <MessagesIcon /> },
   { id: "notes", name: "Notes", icon: <NotesIcon /> },
   { id: "launchpad", name: "Launchpad", icon: <LaunchpadIcon /> },
